@@ -1,0 +1,48 @@
+# Unreal Engine intermediate and binary files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+*.opensdf
+*.sdf
+*.suo
+*.xcodeproj
+*.xcworkspace
+*.xcscheme
+.vscode/
+*.log
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Project files that can be regenerated
+*.xcodeproj/
+*.xcworkspace/
+*.sln
+*.sdf
+*.suo
+*.opensdf
+*.VC.db
+*.VC.VC.opendb
+
+# User-specific project files
+*.user
+*.userprefs
+*.idea/
+
+# Build outputs
+*.exe
+*.dll
+*.lib
+*.app
+*.apk
+*.pdb
+*.obj
+
+# UE5 auto-generated plugin folders (optional)
+Plugins/*/Intermediate/
+Plugins/*/Binaries/
