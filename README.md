@@ -7,9 +7,9 @@ The goal is to showcase unit systems, AI, resource management, and basic PvP mec
 # Project Progress:
 
 ### Phase 1: Setup & Foundation
-- [+] Create UE5 Blank C++ project
-- [+] Setup folder structure (`Source/`, `Content/`, etc.)
-- [+] Implement basic GameMode & PlayerController
+- [x] Create UE5 Blank C++ project
+- [x] Setup folder structure (`Source/`, `Content/`, etc.)
+- [x] Implement basic GameMode & PlayerController
 - [ ] Spawn a simple placeholder unit (cube or capsule)
 - [ ] Implement basic movement (click-to-move or camera controls)
 
