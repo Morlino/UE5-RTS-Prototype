@@ -46,3 +46,7 @@ ehthumbs.db
 # UE5 auto-generated plugin folders (optional)
 Plugins/*/Intermediate/
 Plugins/*/Binaries/
+
+# .NET / C# build artifacts inside Source
+Source/**/bin/
+Source/**/obj/
