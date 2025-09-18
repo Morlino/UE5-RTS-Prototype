@@ -17,7 +17,7 @@ ARTSCameraPawn::ARTSCameraPawn()
 	// Create SpringArm
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
-	SpringArm->TargetArmLength = CameraHeight;
+	SpringArm->TargetArmLength = DesiredArmLength;
 	SpringArm->SetRelativeRotation(CameraRotation);
 	SpringArm->bDoCollisionTest = false;
 
@@ -47,7 +47,13 @@ void ARTSCameraPawn::Tick(float DeltaTime)
 		return;
 
 	FVector NewLocation = GetActorLocation() + (GetTotalVelocity() * DeltaTime);
+	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, DesiredArmLength, DeltaTime, ZoomInterpSpeed);
+
 	SetActorLocation(NewLocation);
+
+	float Alpha = (SpringArm->TargetArmLength - MinZoom) / (MaxZoom - MinZoom);
+	float NewPitch = FMath::Lerp(MaxPitch, MinPitch, Alpha);
+	SpringArm->SetRelativeRotation(FRotator(NewPitch, SpringArm->GetRelativeRotation().Yaw, 0.0f));
 }
 
 // Called to bind functionality to input
@@ -57,6 +63,7 @@ void ARTSCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ARTSCameraPawn::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ARTSCameraPawn::MoveRight);
+	PlayerInputComponent->BindAxis("Zoom", this, &ARTSCameraPawn::Zoom);
 }
 
 void ARTSCameraPawn::MoveForward(float Value)
@@ -67,6 +74,11 @@ void ARTSCameraPawn::MoveForward(float Value)
 void ARTSCameraPawn::MoveRight(float Value)
 {
 	InputVelocity.Y = FMath::Clamp(Value, -1.0f, 1.0f);
+}
+
+void ARTSCameraPawn::Zoom(float Value)
+{
+	DesiredArmLength = FMath::Clamp(DesiredArmLength - Value * ZoomSpeed, MinZoom, MaxZoom);
 }
 
 FVector ARTSCameraPawn::GetTotalVelocity()

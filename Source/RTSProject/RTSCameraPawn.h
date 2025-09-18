@@ -39,7 +39,7 @@ private:
 
 	// Camera Setups Movement 
 	UPROPERTY(EditAnywhere, Category="Camera Movement")
-	float CameraHeight = 2000.0f;
+	float DesiredArmLength = 3000.0f;
 
 	UPROPERTY(EditAnywhere, Category="Camera Movement")
 	FRotator CameraRotation = FRotator(-60.0f, 0.0f, 0.0f);
@@ -57,8 +57,17 @@ private:
 	UPROPERTY(EditAnywhere, Category="Camera Movement")
 	int BorderOffset = 5;
 
+	// Zoom in/out
+	float ZoomSpeed = 1000.0f;
+	float ZoomInterpSpeed = 10.0f;
+	float MinZoom = 1000.0f;
+	float MaxZoom = 4000.0f;
+	float MinPitch = -60.0f;
+	float MaxPitch = -40.0f;
+
 	void MoveForward(float Value);
 	void MoveRight(float Value);
+	void Zoom(float Value);
 
 	FVector GetTotalVelocity();
 	FVector GetKeyboardVelocity();
