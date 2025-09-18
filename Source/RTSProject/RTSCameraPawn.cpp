@@ -46,10 +46,17 @@ void ARTSCameraPawn::Tick(float DeltaTime)
 	if (!PC && !PC->GetLocalPlayer())
 		return;
 
-	FVector NewLocation = GetActorLocation() + (GetTotalVelocity() * DeltaTime);
-	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, DesiredArmLength, DeltaTime, ZoomInterpSpeed);
+	FVector TotalVelocity = GetTotalVelocity(); // WASD + edge scroll
 
-	SetActorLocation(NewLocation);
+	if (bIsDragging)
+	{
+		FVector DragVelocity = (-GetActorRightVector() * DragInput.X + -GetActorForwardVector() * DragInput.Y) * DragCameraSpeed;
+		TotalVelocity += DragVelocity;
+	}
+
+	SetActorLocation(GetActorLocation() + TotalVelocity * DeltaTime);
+
+	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, DesiredArmLength, DeltaTime, ZoomInterpSpeed);
 
 	float Alpha = (SpringArm->TargetArmLength - MinZoom) / (MaxZoom - MinZoom);
 	float NewPitch = FMath::Lerp(MaxPitch, MinPitch, Alpha);
@@ -64,6 +71,10 @@ void ARTSCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAxis("MoveForward", this, &ARTSCameraPawn::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ARTSCameraPawn::MoveRight);
 	PlayerInputComponent->BindAxis("Zoom", this, &ARTSCameraPawn::Zoom);
+	PlayerInputComponent->BindAction("CameraDrag", IE_Pressed, this, &ARTSCameraPawn::OnDragStart);
+	PlayerInputComponent->BindAction("CameraDrag", IE_Released, this, &ARTSCameraPawn::OnDragEnd);
+	PlayerInputComponent->BindAxis("CameraDragX", this, &ARTSCameraPawn::DragX);
+	PlayerInputComponent->BindAxis("CameraDragY", this, &ARTSCameraPawn::DragY);
 }
 
 void ARTSCameraPawn::MoveForward(float Value)
@@ -113,4 +124,31 @@ FVector ARTSCameraPawn::GetEdgeScrollVelocity()
 		EdgeScrollVelocity += GetActorRightVector();
 
 	return EdgeScrollVelocity * EdgeScrollCameraSpeed;
+}
+
+void ARTSCameraPawn::OnDragStart()
+{
+	bIsDragging = true;
+}
+
+void ARTSCameraPawn::OnDragEnd()
+{
+	bIsDragging = false;
+	DragInput = FVector2D::ZeroVector;
+}
+
+void ARTSCameraPawn::DragX(float Value)
+{
+	if (bIsDragging)
+	{
+		DragInput.X = Value;
+	}
+}
+
+void ARTSCameraPawn::DragY(float Value)
+{
+	if (bIsDragging)
+	{
+		DragInput.Y = Value;
+	}
 }

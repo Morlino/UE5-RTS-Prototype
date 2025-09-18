@@ -27,48 +27,73 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
-	// Camera Component
-	UPROPERTY(VisibleAnywhere, Category="Camera")
-	class USpringArmComponent* SpringArm;
+	// Camera Components
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	class USpringArmComponent *SpringArm;
 
-	UPROPERTY(VisibleAnywhere, Category="Camera")
-	class UCameraComponent* Camera;
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	class UCameraComponent *Camera;
 
 	UPROPERTY(VisibleAnywhere)
-	class APlayerController* PC;
+	class APlayerController *PC;
 
-	// Camera Setups Movement 
-	UPROPERTY(EditAnywhere, Category="Camera Movement")
+	// Camera Setup / Initial Values
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float DesiredArmLength = 3000.0f;
 
-	UPROPERTY(EditAnywhere, Category="Camera Movement")
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	FRotator CameraRotation = FRotator(-60.0f, 0.0f, 0.0f);
 
-	// Camera Dynamic Movement
+	// Velocity vectors
 	FVector CurrentVelocity;
- 	// from WASD
 	FVector InputVelocity;
 
-	UPROPERTY(EditAnywhere, Category="Camera Movement")
+	// Movement speeds
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float InputCameraSpeed = 2000.0f;
-	UPROPERTY(EditAnywhere, Category="Camera Movement")
+
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float EdgeScrollCameraSpeed = 3000.0f;
 
-	UPROPERTY(EditAnywhere, Category="Camera Movement")
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
+	float DragCameraSpeed = 4000.0f;
+
+	// Mouse edge scroll
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	int BorderOffset = 5;
 
-	// Zoom in/out
+	// Zoom Settings
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float ZoomSpeed = 1000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float ZoomInterpSpeed = 10.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float MinZoom = 1000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float MaxZoom = 4000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float MinPitch = -60.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera Movement")
 	float MaxPitch = -40.0f;
 
+	bool bIsDragging = false;
+	FVector2D DragInput;
+
+	// Input / Movement Functions
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void Zoom(float Value);
+	void OnDragStart();
+	void OnDragEnd();
+	void DragX(float Value);
+	void DragY(float Value);
 
+	// Helper Functions
 	FVector GetTotalVelocity();
 	FVector GetKeyboardVelocity();
 	FVector GetEdgeScrollVelocity();
