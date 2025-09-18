@@ -11,7 +11,7 @@ The goal is to showcase unit systems, AI, resource management, and basic PvP mec
 - [x] Setup folder structure (`Source/`, `Content/`, etc.)
 - [x] Implement basic GameMode & PlayerController
 - [ ] Spawn a simple placeholder unit (cube or capsule)
-- [ ] Implement basic movement (click-to-move or camera controls)
+- [x] Implement basic movement (click-to-move or camera controls)
 
 ### Phase 2: Unit System
 - [ ] Unit selection (single & multiple)
