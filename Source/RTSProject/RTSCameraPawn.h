@@ -23,9 +23,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 private:
 	// Camera Components
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
@@ -84,6 +81,12 @@ private:
 	bool bIsDragging = false;
 	FVector2D DragInput;
 
+	// Helper Functions
+	FVector GetTotalVelocity();
+	FVector GetKeyboardVelocity();
+	FVector GetEdgeScrollVelocity();
+
+public:
 	// Input / Movement Functions
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -92,9 +95,4 @@ private:
 	void OnDragEnd();
 	void DragX(float Value);
 	void DragY(float Value);
-
-	// Helper Functions
-	FVector GetTotalVelocity();
-	FVector GetKeyboardVelocity();
-	FVector GetEdgeScrollVelocity();
 };

@@ -16,4 +16,17 @@ class RTSPROJECT_API ARTSPlayerController : public APlayerController
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
+
+private:
+	class ARTSCameraPawn* CameraPawn;
+
+	// Input / Movement Functions
+	void CameraMoveForward(float Value);
+	void CameraMoveRight(float Value);
+	void CameraZoom(float Value);
+	void CameraOnDragStart();
+	void CameraOnDragEnd();
+	void CameraDragX(float Value);
+	void CameraDragY(float Value);
 };

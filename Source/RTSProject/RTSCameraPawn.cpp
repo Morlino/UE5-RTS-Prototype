@@ -63,20 +63,6 @@ void ARTSCameraPawn::Tick(float DeltaTime)
 	SpringArm->SetRelativeRotation(FRotator(NewPitch, SpringArm->GetRelativeRotation().Yaw, 0.0f));
 }
 
-// Called to bind functionality to input
-void ARTSCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	PlayerInputComponent->BindAxis("MoveForward", this, &ARTSCameraPawn::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &ARTSCameraPawn::MoveRight);
-	PlayerInputComponent->BindAxis("Zoom", this, &ARTSCameraPawn::Zoom);
-	PlayerInputComponent->BindAction("CameraDrag", IE_Pressed, this, &ARTSCameraPawn::OnDragStart);
-	PlayerInputComponent->BindAction("CameraDrag", IE_Released, this, &ARTSCameraPawn::OnDragEnd);
-	PlayerInputComponent->BindAxis("CameraDragX", this, &ARTSCameraPawn::DragX);
-	PlayerInputComponent->BindAxis("CameraDragY", this, &ARTSCameraPawn::DragY);
-}
-
 void ARTSCameraPawn::MoveForward(float Value)
 {
 	InputVelocity.X = FMath::Clamp(Value, -1.0f, 1.0f);
