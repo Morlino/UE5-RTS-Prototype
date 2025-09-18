@@ -48,17 +48,19 @@ private:
 	FVector CurrentVelocity;
  	// from WASD
 	FVector InputVelocity;
- 	// from mouse edges
-	FVector EdgeScrollVelocity;
 
 	UPROPERTY(EditAnywhere, Category="Camera Movement")
 	float InputCameraSpeed = 2000.0f;
 	UPROPERTY(EditAnywhere, Category="Camera Movement")
-	float EdgeScrollCameraSpeed = 2000.0f;
+	float EdgeScrollCameraSpeed = 3000.0f;
 
 	UPROPERTY(EditAnywhere, Category="Camera Movement")
 	int BorderOffset = 5;
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);
+
+	FVector GetTotalVelocity();
+	FVector GetKeyboardVelocity();
+	FVector GetEdgeScrollVelocity();
 };

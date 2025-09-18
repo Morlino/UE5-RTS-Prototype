@@ -46,32 +46,7 @@ void ARTSCameraPawn::Tick(float DeltaTime)
 	if (!PC && !PC->GetLocalPlayer())
 		return;
 
-	// Reset velocities each frame
-	EdgeScrollVelocity = FVector::ZeroVector;
-
-	// Get Cursor location
-	int32 ViewportSizeX, ViewportSizeY;
-	float MouseX, MouseY;
-	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
-	PC->GetMousePosition(MouseX, MouseY);
-
-	if (MouseY < BorderOffset)
-		EdgeScrollVelocity += GetActorForwardVector();
-	else if (MouseY > ViewportSizeY - BorderOffset)
-		EdgeScrollVelocity += -GetActorForwardVector();
-
-	if (MouseX < BorderOffset)
-		EdgeScrollVelocity += -GetActorRightVector();
-	else if (MouseX > ViewportSizeX - BorderOffset)
-		EdgeScrollVelocity += GetActorRightVector();
-
-	// Set each keyboard and Edge velocity
-	FVector KeyboardVelocity = (GetActorForwardVector() * InputVelocity.X + GetActorRightVector() * InputVelocity.Y) * InputCameraSpeed;
-	FVector EdgeVelocity = EdgeScrollVelocity * EdgeScrollCameraSpeed;
-
-	// Set Current combined velocity
-	CurrentVelocity = KeyboardVelocity + EdgeVelocity;
-	FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
+	FVector NewLocation = GetActorLocation() + (GetTotalVelocity() * DeltaTime);
 	SetActorLocation(NewLocation);
 }
 
@@ -92,4 +67,38 @@ void ARTSCameraPawn::MoveForward(float Value)
 void ARTSCameraPawn::MoveRight(float Value)
 {
 	InputVelocity.Y = FMath::Clamp(Value, -1.0f, 1.0f);
+}
+
+FVector ARTSCameraPawn::GetTotalVelocity()
+{
+	return GetKeyboardVelocity() + GetEdgeScrollVelocity();
+}
+
+FVector ARTSCameraPawn::GetKeyboardVelocity()
+{
+	return (GetActorForwardVector() * InputVelocity.X + GetActorRightVector() * InputVelocity.Y) * InputCameraSpeed;
+}
+
+FVector ARTSCameraPawn::GetEdgeScrollVelocity()
+{
+	// Reset velocities each frame
+	FVector EdgeScrollVelocity = FVector::ZeroVector;
+
+	// Get Cursor location
+	int32 ViewportSizeX, ViewportSizeY;
+	float MouseX, MouseY;
+	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
+	PC->GetMousePosition(MouseX, MouseY);
+
+	if (MouseY < BorderOffset)
+		EdgeScrollVelocity += GetActorForwardVector();
+	else if (MouseY > ViewportSizeY - BorderOffset)
+		EdgeScrollVelocity += -GetActorForwardVector();
+
+	if (MouseX < BorderOffset)
+		EdgeScrollVelocity += -GetActorRightVector();
+	else if (MouseX > ViewportSizeX - BorderOffset)
+		EdgeScrollVelocity += GetActorRightVector();
+
+	return EdgeScrollVelocity * EdgeScrollCameraSpeed;
 }
