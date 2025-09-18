@@ -13,5 +13,7 @@ UCLASS()
 class RTSPROJECT_API ARTSPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+
+protected:
+	virtual void BeginPlay() override;
 };

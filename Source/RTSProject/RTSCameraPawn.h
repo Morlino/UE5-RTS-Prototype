@@ -28,11 +28,14 @@ public:
 
 private:
 	// Camera Component
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category="Camera")
 	class USpringArmComponent* SpringArm;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category="Camera")
 	class UCameraComponent* Camera;
+
+	UPROPERTY(VisibleAnywhere)
+	class APlayerController* PC;
 
 	// Camera Setups Movement 
 	UPROPERTY(EditAnywhere, Category="Camera Movement")
@@ -43,9 +46,18 @@ private:
 
 	// Camera Dynamic Movement
 	FVector CurrentVelocity;
+ 	// from WASD
+	FVector InputVelocity;
+ 	// from mouse edges
+	FVector EdgeScrollVelocity;
 
 	UPROPERTY(EditAnywhere, Category="Camera Movement")
-	float CameraSpeed = 1000.0f;
+	float InputCameraSpeed = 2000.0f;
+	UPROPERTY(EditAnywhere, Category="Camera Movement")
+	float EdgeScrollCameraSpeed = 2000.0f;
+
+	UPROPERTY(EditAnywhere, Category="Camera Movement")
+	int BorderOffset = 5;
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);
