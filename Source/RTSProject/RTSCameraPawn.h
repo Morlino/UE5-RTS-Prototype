@@ -32,7 +32,7 @@ private:
 	class UCameraComponent *Camera;
 
 	UPROPERTY(VisibleAnywhere)
-	class APlayerController *PC;
+	class ARTSPlayerController *PC;
 
 	// Camera Setup / Initial Values
 	UPROPERTY(EditAnywhere, Category = "Camera Movement")

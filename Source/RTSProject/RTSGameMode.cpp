@@ -4,9 +4,11 @@
 #include "RTSGameMode.h"
 #include "RTSPlayerController.h"
 #include "RTSCameraPawn.h"
+#include "RTSHUD.h"
 
 ARTSGameMode::ARTSGameMode()
 {
     PlayerControllerClass = ARTSPlayerController::StaticClass();
     DefaultPawnClass = ARTSCameraPawn::StaticClass();
+    HUDClass = ARTSHUD::StaticClass();
 }

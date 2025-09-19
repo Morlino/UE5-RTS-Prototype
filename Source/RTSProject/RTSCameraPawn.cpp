@@ -5,6 +5,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
+#include "RTSPlayerController.h"
 
 // Sets default values
 ARTSCameraPawn::ARTSCameraPawn()
@@ -34,7 +35,7 @@ void ARTSCameraPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	PC = Cast<APlayerController>(GetController());
+	PC = Cast<ARTSPlayerController>(GetController());
 
 }
 
@@ -44,6 +45,10 @@ void ARTSCameraPawn::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if (!PC && !PC->GetLocalPlayer())
+		return;
+
+	// Lock Camera if Player hold Left Click
+	if (PC->IsLMouseHolding())
 		return;
 
 	FVector TotalVelocity = GetTotalVelocity(); // WASD + edge scroll
