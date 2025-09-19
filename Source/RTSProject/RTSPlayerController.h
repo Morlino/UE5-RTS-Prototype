@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "RTSUnit.h"
 #include "RTSPlayerController.generated.h"
 
 /**
@@ -19,7 +20,7 @@ protected:
 	virtual void SetupInputComponent() override;
 	virtual void PostInitializeComponents() override;
 
-	public :
+public :
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -33,6 +34,12 @@ private:
 	FVector2D InitialMousePos;
 	FVector2D CurrentMousePos;
 
+	// Unit Manager
+	UPROPERTY()
+	TArray<ARTSUnit*> SelectedUnits;
+	
+	bool bIsAddingToSelection = false;
+
 	// Input / Movement Functions
 	void CameraMoveForward(float Value);
 	void CameraMoveRight(float Value);
@@ -42,11 +49,19 @@ private:
 	void CameraDragX(float Value);
 	void CameraDragY(float Value);
 
-	// Unit Input
+	// Mouse Click Control
 	void OnRMouseUp();
 	void OnLMouseDown();
 	void OnLMouseUp();
 
+	// Unit Selection
+	void UpdateUnitSelection();
+	bool IsUnitInSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max);
+	void AddUnitToSelection(ARTSUnit *Unit);
+	void RemoveUnitFromSelection(ARTSUnit *Unit);
+	void ClearSelection();
+
 public:
 	bool IsLMouseHolding();
+	void SetSelected(bool bSelected);
 };

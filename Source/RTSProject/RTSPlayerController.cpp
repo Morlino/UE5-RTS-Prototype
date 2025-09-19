@@ -5,6 +5,8 @@
 #include "RTSCameraPawn.h"
 #include "Blueprint/UserWidget.h"
 #include "RTSHUD.h"
+#include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 
 void ARTSPlayerController::BeginPlay()
 {
@@ -121,7 +123,6 @@ void ARTSPlayerController::OnRMouseUp()
 
 void ARTSPlayerController::OnLMouseDown()
 {
-    UE_LOG(LogTemp, Warning, TEXT("LClick Pressed"));
     bIsLMouseHolding = true;
     GetMousePosition(InitialMousePos.X, InitialMousePos.Y);
     if (ARTSHUD *RTSHUD = Cast<ARTSHUD>(GetHUD()))
@@ -132,13 +133,76 @@ void ARTSPlayerController::OnLMouseDown()
 
 void ARTSPlayerController::OnLMouseUp()
 {
-    UE_LOG(LogTemp, Warning, TEXT("LClick Released"));
     bIsLMouseHolding = false;
-    GetMousePosition(InitialMousePos.X, InitialMousePos.Y);
     if (ARTSHUD *RTSHUD = Cast<ARTSHUD>(GetHUD()))
     {
         RTSHUD->EndSelection();
     }
+
+    UpdateUnitSelection();
+}
+
+void ARTSPlayerController::UpdateUnitSelection()
+{
+    // Define The Selection Rectangle
+    float MinX = FMath::Min(InitialMousePos.X, CurrentMousePos.X);
+    float MaxX = FMath::Max(InitialMousePos.X, CurrentMousePos.X);
+    float MinY = FMath::Min(InitialMousePos.Y, CurrentMousePos.Y);
+    float MaxY = FMath::Max(InitialMousePos.Y, CurrentMousePos.Y);
+
+    TArray<ARTSUnit *> UnitsInRectangle;
+
+    for (TActorIterator<ARTSUnit> It(GetWorld()); It; ++It)
+    {
+        ARTSUnit *Unit = *It;
+        if (IsUnitInSelectionRect(Unit, FVector2D(MinX, MinY), FVector2D(MaxX, MaxY)))
+        {
+            UnitsInRectangle.Add(Unit);
+        }
+    }
+
+    // Update Selection
+    if (UnitsInRectangle.Num() > 0)
+    {
+        ClearSelection();
+        for (ARTSUnit *Unit : UnitsInRectangle)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Added new Unit"));
+            AddUnitToSelection(Unit);
+        }
+    }
+}
+
+bool ARTSPlayerController::IsUnitInSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max)
+{
+    FVector2D ScreenPos;
+    UGameplayStatics::ProjectWorldToScreen(this, Unit->GetActorLocation(), ScreenPos);
+    return ScreenPos.X >= Min.X && ScreenPos.X <= Max.X &&
+           ScreenPos.Y >= Min.Y && ScreenPos.Y <= Max.Y;
+}
+
+void ARTSPlayerController::AddUnitToSelection(ARTSUnit *Unit)
+{
+    SelectedUnits.Add(Unit);
+    Unit->SetSelected(true);
+}
+
+void ARTSPlayerController::RemoveUnitFromSelection(ARTSUnit *Unit)
+{
+    SelectedUnits.Remove(Unit);
+    Unit->SetSelected(false);
+}
+
+void ARTSPlayerController::ClearSelection()
+{
+    for (ARTSUnit *Unit : SelectedUnits)
+    {
+        if (Unit)
+        {
+            Unit->SetSelected(false);
+        }
+    }
+    SelectedUnits.Empty();
 }
 
 bool ARTSPlayerController::IsLMouseHolding()
