@@ -30,7 +30,6 @@ void ARTSHUD::DrawHUD()
 
 void ARTSHUD::StartSelection(const FVector2D &StartPos)
 {
-    UE_LOG(LogTemp, Warning, TEXT("HUD Started Selection"));
     bIsSelecting = true;
     SelectionStart = StartPos;
     SelectionEnd = StartPos;
@@ -38,12 +37,10 @@ void ARTSHUD::StartSelection(const FVector2D &StartPos)
 
 void ARTSHUD::UpdateSelection(const FVector2D &CurrentPos)
 {
-    UE_LOG(LogTemp, Warning, TEXT("HUD Updating Selection"));
     SelectionEnd = CurrentPos;
 }
 
 void ARTSHUD::EndSelection()
 {
-    UE_LOG(LogTemp, Warning, TEXT("HUD Ended Selection"));
     bIsSelecting = false;
 }

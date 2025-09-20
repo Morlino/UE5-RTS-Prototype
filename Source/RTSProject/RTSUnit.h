@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "RTSUnit.generated.h"
 
 UCLASS()
-class RTSPROJECT_API ARTSUnit : public AActor
+class RTSPROJECT_API ARTSUnit : public APawn
 {
 	GENERATED_BODY()
 	
@@ -23,19 +23,27 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	void SetSelected(bool bSelected);
+	void MoveToLocation(const FVector &TargetLocation);
 
 private:
+	UPROPERTY(VisibleAnywhere, Category = "Collision")
+	class UCapsuleComponent *CapsuleComponent;
+
 	UPROPERTY(EditAnywhere, Category = "Unit Mesh")
 	class UStaticMeshComponent *UnitMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Selection")
 	class UDecalComponent *SelectionDecal;
 
+	UPROPERTY(VisibleAnywhere, Category = "MovementComponent")
+	class UFloatingPawnMovement *MovementComponent;
+
+	class AAIController *AIController;
+
 	float Health = 400.0f;
 	float MaxHealth = 400.0f;
 	float MovementSpeed = 100.0f;
 
-	virtual void MoveToLocation(FVector Target);
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
 	virtual void Die();
 };

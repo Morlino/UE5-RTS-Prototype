@@ -41,7 +41,7 @@ void ARTSPlayerController::SetupInputComponent()
     InputComponent->BindAxis("CameraDragY", this, &ARTSPlayerController::CameraDragY);
 
     // Unit Control
-    InputComponent->BindAction("RightClick", IE_Pressed, this, &ARTSPlayerController::OnRMouseUp);
+    InputComponent->BindAction("RightClick", IE_Pressed, this, &ARTSPlayerController::OnRMouseDown);
     InputComponent->BindAction("LeftClick", IE_Pressed, this, &ARTSPlayerController::OnLMouseDown);
     InputComponent->BindAction("LeftClick", IE_Released, this, &ARTSPlayerController::OnLMouseUp);
 }
@@ -117,8 +117,34 @@ void ARTSPlayerController::CameraDragY(float Value)
     }
 }
 
-void ARTSPlayerController::OnRMouseUp()
+void ARTSPlayerController::OnRMouseDown()
 {
+    UE_LOG(LogTemp, Warning, TEXT("OnRMouseDown"));
+
+    // Get Cursor location in the world
+    FHitResult HitResult;
+    GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
+    if (HitResult.bBlockingHit)
+    {
+        const FVector TargetLocation = HitResult.Location;
+        int32 Index = 0;
+
+        for (ARTSUnit *Unit : SelectedUnits)
+        {
+            if (Unit)
+            {
+                // Spread them
+                int32 Row = Index / 5;
+                int32 Col = Index % 5;
+                FVector Destination = TargetLocation + FVector(Row * 100.0f, Col * 100.0f, 0.0f);
+                
+                // Move each unit to that Location
+                UE_LOG(LogTemp, Warning, TEXT("Moving"));
+                Unit->MoveToLocation(Destination);
+                ++Index;
+            }
+        }
+    }
 }
 
 void ARTSPlayerController::OnLMouseDown()
@@ -155,7 +181,7 @@ void ARTSPlayerController::UpdateUnitSelection()
     for (TActorIterator<ARTSUnit> It(GetWorld()); It; ++It)
     {
         ARTSUnit *Unit = *It;
-        if (IsUnitInSelectionRect(Unit, FVector2D(MinX, MinY), FVector2D(MaxX, MaxY)))
+        if (IsUnitOverlappingSelectionRect(Unit, FVector2D(MinX, MinY), FVector2D(MaxX, MaxY)))
         {
             UnitsInRectangle.Add(Unit);
         }
@@ -173,12 +199,40 @@ void ARTSPlayerController::UpdateUnitSelection()
     }
 }
 
-bool ARTSPlayerController::IsUnitInSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max)
+bool ARTSPlayerController::IsUnitOverlappingSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max)
 {
-    FVector2D ScreenPos;
-    UGameplayStatics::ProjectWorldToScreen(this, Unit->GetActorLocation(), ScreenPos);
-    return ScreenPos.X >= Min.X && ScreenPos.X <= Max.X &&
-           ScreenPos.Y >= Min.Y && ScreenPos.Y <= Max.Y;
+    // Get unit's bounding box in world space
+    FBox Bounds = Unit->GetComponentsBoundingBox();
+
+    FVector2D UnitMin(TNumericLimits<float>::Max(), TNumericLimits<float>::Max());
+    FVector2D UnitMax(TNumericLimits<float>::Lowest(), TNumericLimits<float>::Lowest());
+
+    // Project all 8 corners of the bounding box
+    FVector Corners[8] = {
+        FVector(Bounds.Min.X, Bounds.Min.Y, Bounds.Min.Z),
+        FVector(Bounds.Max.X, Bounds.Min.Y, Bounds.Min.Z),
+        FVector(Bounds.Min.X, Bounds.Max.Y, Bounds.Min.Z),
+        FVector(Bounds.Max.X, Bounds.Max.Y, Bounds.Min.Z),
+        FVector(Bounds.Min.X, Bounds.Min.Y, Bounds.Max.Z),
+        FVector(Bounds.Max.X, Bounds.Min.Y, Bounds.Max.Z),
+        FVector(Bounds.Min.X, Bounds.Max.Y, Bounds.Max.Z),
+        FVector(Bounds.Max.X, Bounds.Max.Y, Bounds.Max.Z)};
+
+    for (FVector Corner : Corners)
+    {
+        FVector2D ScreenPos;
+        if (UGameplayStatics::ProjectWorldToScreen(this, Corner, ScreenPos))
+        {
+            UnitMin.X = FMath::Min(UnitMin.X, ScreenPos.X);
+            UnitMin.Y = FMath::Min(UnitMin.Y, ScreenPos.Y);
+            UnitMax.X = FMath::Max(UnitMax.X, ScreenPos.X);
+            UnitMax.Y = FMath::Max(UnitMax.Y, ScreenPos.Y);
+        }
+    }
+
+    // Check for overlap
+    return !(Max.X < UnitMin.X || Min.X > UnitMax.X ||
+             Max.Y < UnitMin.Y || Min.Y > UnitMax.Y);
 }
 
 void ARTSPlayerController::AddUnitToSelection(ARTSUnit *Unit)

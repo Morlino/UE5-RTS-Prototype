@@ -29,7 +29,6 @@ private:
 	// class ARTSHUD *RTSHUD;
 
 	// Click Control
-	float ClickThreshold = 5.0f;
 	bool bIsLMouseHolding = false;
 	FVector2D InitialMousePos;
 	FVector2D CurrentMousePos;
@@ -50,13 +49,13 @@ private:
 	void CameraDragY(float Value);
 
 	// Mouse Click Control
-	void OnRMouseUp();
+	void OnRMouseDown();
 	void OnLMouseDown();
 	void OnLMouseUp();
 
 	// Unit Selection
 	void UpdateUnitSelection();
-	bool IsUnitInSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max);
+	bool IsUnitOverlappingSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max);
 	void AddUnitToSelection(ARTSUnit *Unit);
 	void RemoveUnitFromSelection(ARTSUnit *Unit);
 	void ClearSelection();

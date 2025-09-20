@@ -10,12 +10,12 @@ The goal is to showcase unit systems, AI, resource management, and basic PvP mec
 - [x] Create UE5 Blank C++ project
 - [x] Setup folder structure (`Source/`, `Content/`, etc.)
 - [x] Implement basic GameMode & PlayerController
-- [ ] Spawn a simple placeholder unit (cube or capsule)
+- [+] Spawn a simple placeholder unit (cube or capsule)
 - [x] Implement basic movement (click-to-move or camera controls)
 
 ### Phase 2: Unit System
-- [ ] Unit selection (single & multiple)
-- [ ] Unit movement via NavMesh
+- [x] Unit selection (single & multiple)
+- [+] Unit movement via NavMesh
 - [ ] Unit stats: health, damage, attack range
 - [ ] Basic attack mechanic (target enemy → deal damage)
 - [ ] Unit death handling
