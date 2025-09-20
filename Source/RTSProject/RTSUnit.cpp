@@ -183,7 +183,12 @@ void ARTSUnit::UpdateFollow(float DeltaTime)
 	if (!CurrentTarget || !AIController)
 		return;
 
-	AIController->MoveToActor(CurrentTarget, 100.0f); // follow distance
+	// Adjust the distance based on Target Size
+	const FBox TargetBox = CurrentTarget->GetComponentsBoundingBox();
+	const float TargetRadius = TargetBox.GetExtent().Size2D();
+	const float FollowDistance = TargetRadius + 50.0f; // 50 units extra buffer
+
+	AIController->MoveToActor(CurrentTarget, FollowDistance);
 }
 
 float ARTSUnit::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser)
