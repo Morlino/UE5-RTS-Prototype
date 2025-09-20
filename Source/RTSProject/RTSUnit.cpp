@@ -7,26 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/DecalComponent.h"
 #include "AIController.h"
-#include "DrawDebugHelpers.h"
-
-// Call this when you want to visualize a target location
-void DrawTargetDebugSphere(UWorld *World, const FVector &TargetLocation, float Radius = 50.f, FColor Color = FColor::Green, float Duration = 0.5f)
-{
-	if (!World)
-		return;
-
-	DrawDebugSphere(
-		World,
-		TargetLocation, // Center of the sphere
-		Radius,			// Radius
-		12,				// Segments (higher = smoother)
-		Color,			// Color
-		false,			// Persistent lines
-		Duration,		// LifeTime in seconds
-		0,				// Depth priority
-		2.f				// Line thickness
-	);
-}
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ARTSUnit::ARTSUnit()
@@ -56,6 +37,85 @@ ARTSUnit::ARTSUnit()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 
+
+// Called every frame
+void ARTSUnit::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	switch (CurrentState)
+	{
+		case EUnitState::Idle:
+			// Nothing to do
+			break;
+
+		case EUnitState::Moving:
+			UpdateMovement(DeltaTime);
+			break;
+
+		case EUnitState::Attacking:
+			UpdateAttack(DeltaTime);
+			break;
+
+		case EUnitState::Following:
+			UpdateFollow(DeltaTime);
+			break;
+	}
+}
+
+
+void ARTSUnit::SetSelected(bool bSelected)
+{
+	SelectionDecal->SetHiddenInGame(!bSelected);
+}
+
+void ARTSUnit::MoveTo(const FVector &TargetLocation)
+{
+
+	MoveTarget = TargetLocation;
+	CurrentState = EUnitState::Moving;
+	bIsMovingToTarget = true;
+
+	if (AIController)
+	{
+		AIController->MoveToLocation(TargetLocation);
+	}
+}
+
+void ARTSUnit::Follow(const ARTSUnit *TargetUnit)
+{
+	if (!TargetUnit)
+		return;
+
+	CurrentTarget = const_cast<ARTSUnit *>(TargetUnit);
+	CurrentState = EUnitState::Following;
+}
+
+void ARTSUnit::StartAttack(ARTSUnit *TargetUnit)
+{
+	if (!TargetUnit || TargetUnit == this)
+		return;
+
+	CurrentTarget = TargetUnit;
+	CurrentState = EUnitState::Attacking;
+	bIsMovingToTarget = false;
+}
+
+void ARTSUnit::Attack(ARTSUnit *TargetUnit)
+{
+	if (!TargetUnit || TargetUnit == this)
+		return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Attacking %s"), *TargetUnit->GetName());
+
+	UGameplayStatics::ApplyDamage(TargetUnit, Stats.AttackDamage, GetController(), this, UDamageType::StaticClass());
+}
+
+void ARTSUnit::StopAttack()
+{
+	CurrentTarget = nullptr;
+}
+
 // Called when the game starts or when spawned
 void ARTSUnit::BeginPlay()
 {
@@ -64,45 +124,83 @@ void ARTSUnit::BeginPlay()
 	AIController = Cast<AAIController>(GetController());
 }
 
-void ARTSUnit::SetSelected(bool bSelected)
+void ARTSUnit::UpdateMovement(float DeltaTime)
 {
-	SelectionDecal->SetHiddenInGame(!bSelected);
-}
+	if (!bIsMovingToTarget || !AIController)
+		return;
 
-// Called every frame
-void ARTSUnit::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	float Distance = FVector::Dist(GetActorLocation(), MoveTarget);
 
-}
-
-void ARTSUnit::MoveToLocation(const FVector &TargetLocation)
-{
-	if (AIController)
+	if (Distance <= 10.0f) // small arrival threshold
 	{
-		DrawTargetDebugSphere(GetWorld(), TargetLocation);
-		AIController->MoveToLocation(TargetLocation);
+		AIController->StopMovement();
+		CurrentState = EUnitState::Idle;
+		bIsMovingToTarget = false;
+	}
+}
+void ARTSUnit::UpdateAttack(float DeltaTime)
+{
+	if (!CurrentTarget || CurrentTarget->Stats.Health <= 0 || !IsValid(CurrentTarget))
+	{
+		StopAttack();
+		CurrentState = EUnitState::Idle;
+		return;
+	}
+
+	float Distance = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
+	float EffectiveAttackRange = Stats.AttackRange + GetSimpleCollisionRadius() + CurrentTarget->GetSimpleCollisionRadius();
+
+	if (Distance > EffectiveAttackRange)
+	{
+		if (!bIsMovingToTarget)
+		{
+			AIController->MoveToActor(CurrentTarget, Stats.AttackRange);
+			bIsMovingToTarget = true;
+		}
+	}
+	else
+	{
+		if (bIsMovingToTarget && AIController)
+		{
+			AIController->StopMovement();
+			bIsMovingToTarget = false;
+		}
+
+		// Attack logic
+		TimeSinceLastAttack += DeltaTime;
+		float AttackInterval = 1.0f / Stats.AttackSpeed;
+		if (TimeSinceLastAttack >= AttackInterval)
+		{
+			Attack(CurrentTarget);
+			TimeSinceLastAttack = 0.0f;
+		}
 	}
 }
 
-void ARTSUnit::Attack(ARTSUnit *Unit)
+void ARTSUnit::UpdateFollow(float DeltaTime)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Attacking"));
+	if (!CurrentTarget || !AIController)
+		return;
+
+	AIController->MoveToActor(CurrentTarget, 100.0f); // follow distance
 }
 
 float ARTSUnit::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser)
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	UE_LOG(LogTemp, Warning, TEXT("Takes %f Damage"), ActualDamage);
 
-	Health -= ActualDamage;
-	if (Health <= 0.0f)
+	Stats.Health -= ActualDamage;
+	if (Stats.Health <= 0.0f)
 	{
 		Die();
 	}
 
 	return ActualDamage;
 }
+
 void ARTSUnit::Die()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Unit Died"));
+	Destroy();
 }

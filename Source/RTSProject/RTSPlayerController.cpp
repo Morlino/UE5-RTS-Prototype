@@ -7,6 +7,40 @@
 #include "RTSHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "DrawDebugHelpers.h"
+
+ARTSPlayerController::ARTSPlayerController()
+{
+    // Optional: initialize variables here
+    bShowMouseCursor = true;
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+}
+
+// Called every frame
+void ARTSPlayerController::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+
+    if (bIsLMouseHolding)
+    {
+        GetMousePosition(CurrentMousePos.X, CurrentMousePos.Y);
+        if (ARTSHUD *RTSHUD = Cast<ARTSHUD>(GetHUD()))
+        {
+            RTSHUD->UpdateSelection(CurrentMousePos);
+        }
+    }
+}
+
+void ARTSPlayerController::SetTeamID(int32 TeamID)
+{
+    MyTeamID = TeamID;
+}
+
+bool ARTSPlayerController::IsLMouseHolding() const
+{
+    return bIsLMouseHolding;
+}
 
 void ARTSPlayerController::BeginPlay()
 {
@@ -19,12 +53,6 @@ void ARTSPlayerController::BeginPlay()
     SetInputMode(InputMode);
 
     CameraPawn = Cast<ARTSCameraPawn>(GetPawn());
-}
-
-void ARTSPlayerController::PostInitializeComponents()
-{
-    Super::PostInitializeComponents();
-    // RTSHUD = Cast<ARTSHUD>(GetHUD());
 }
 
 void ARTSPlayerController::SetupInputComponent()
@@ -46,19 +74,9 @@ void ARTSPlayerController::SetupInputComponent()
     InputComponent->BindAction("LeftClick", IE_Released, this, &ARTSPlayerController::OnLMouseUp);
 }
 
-// Called every frame
-void ARTSPlayerController::Tick(float DeltaTime)
+void ARTSPlayerController::PostInitializeComponents()
 {
-	Super::Tick(DeltaTime);
-
-    if (bIsLMouseHolding)
-    {
-        GetMousePosition(CurrentMousePos.X, CurrentMousePos.Y);
-        if (ARTSHUD *RTSHUD = Cast<ARTSHUD>(GetHUD()))
-        {
-            RTSHUD->UpdateSelection(CurrentMousePos);
-        }
-    }
+    Super::PostInitializeComponents();
 }
 
 void ARTSPlayerController::CameraMoveForward(float Value)
@@ -117,44 +135,6 @@ void ARTSPlayerController::CameraDragY(float Value)
     }
 }
 
-void ARTSPlayerController::OnRMouseDown()
-{
-    UE_LOG(LogTemp, Warning, TEXT("OnRMouseDown"));
-
-    FHitResult HitResult;
-    GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
-
-    if (HitResult.bBlockingHit)
-    {
-        ARTSUnit *HitUnit = Cast<ARTSUnit>(HitResult.GetActor());
-
-        if (HitUnit)
-        {
-            if (HitUnit->TeamID != MyTeamID)
-            {
-                for (ARTSUnit *Unit : SelectedUnits)
-                {
-                    if (Unit)
-                    {
-                        Unit->Attack(HitUnit);
-                    }
-                }
-            }
-            else
-            {
-                UE_LOG(LogTemp, Warning, TEXT("Clicked friendly unit"));
-            }
-        }
-        else
-        {
-            // Ground clicked: move units
-            FVector TargetLocation = HitResult.Location;
-            TArray<FVector> Destinations = ComputeUnitDestinations(TargetLocation);
-            MoveSelectedUnitsTo(Destinations);
-        }
-    }
-}
-
 void ARTSPlayerController::OnLMouseDown()
 {
     bIsLMouseHolding = true;
@@ -176,36 +156,34 @@ void ARTSPlayerController::OnLMouseUp()
     UpdateUnitSelection();
 }
 
-TArray<FVector> ARTSPlayerController::ComputeUnitDestinations(const FVector &TargetLocation)
+void ARTSPlayerController::OnRMouseDown()
 {
-    TArray<FVector> Destinations;
-    int32 Index = 0;
-    int32 UnitsPerRow = 5;
-    float Spacing = 100.0f;
-    
-    for (ARTSUnit *Unit : SelectedUnits)
+    UE_LOG(LogTemp, Warning, TEXT("OnRMouseDown"));
+
+    FHitResult HitResult;
+    if (!GetHitResultUnderCursor(ECC_Visibility, true, HitResult))
+        return;
+
+    DrawDebugSphere(GetWorld(), HitResult.Location, 50.0f, 12, FColor::Green, false, 0.05f, 0, 2.0f);
+
+    ARTSUnit *HitUnit = Cast<ARTSUnit>(HitResult.GetActor());
+    if (HitUnit)
     {
-        if (Unit)
+        if (HitUnit->TeamID != MyTeamID)
         {
-            int32 Row = Index / UnitsPerRow;
-            int32 Col = Index % UnitsPerRow;
-            FVector Destination = TargetLocation + FVector(Row * Spacing, Col * Spacing, 0.0f);
-            Destinations.Add(Destination);
-            ++Index;
+            // Attack enemy
+            IssueCommandToUnits(SelectedUnits, EUnitCommand::Attack, FVector::ZeroVector, HitUnit);
+        }
+        else
+        {
+            // Follow ally
+            IssueCommandToUnits(SelectedUnits, EUnitCommand::Follow, FVector::ZeroVector, HitUnit);
         }
     }
-
-    return Destinations;
-}
-
-void ARTSPlayerController::MoveSelectedUnitsTo(const TArray<FVector> &Destinations)
-{
-    for (int32 i = 0; i < SelectedUnits.Num(); ++i)
+    else
     {
-        if (SelectedUnits[i])
-        {
-            SelectedUnits[i]->MoveToLocation(Destinations[i]);
-        }
+        // Move to ground
+        IssueCommandToUnits(SelectedUnits, EUnitCommand::Move, HitResult.Location, nullptr);
     }
 }
 
@@ -243,7 +221,7 @@ void ARTSPlayerController::UpdateUnitSelection()
     }
 }
 
-bool ARTSPlayerController::IsUnitOverlappingSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max)
+bool ARTSPlayerController::IsUnitOverlappingSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max) const
 {
     // Get unit's bounding box in world space
     FBox Bounds = Unit->GetComponentsBoundingBox();
@@ -303,12 +281,42 @@ void ARTSPlayerController::ClearSelection()
     SelectedUnits.Empty();
 }
 
-bool ARTSPlayerController::IsLMouseHolding()
+void ARTSPlayerController::IssueCommandToUnits(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation, ARTSUnit *TargetUnit)
 {
-    return bIsLMouseHolding;
+    for (ARTSUnit *Unit : Units)
+    {
+        if (!Unit)
+            continue;
+
+        switch (Command)
+        {
+        case EUnitCommand::Move:
+            Unit->MoveTo(TargetLocation);
+            break;
+
+        case EUnitCommand::Attack:
+            if (TargetUnit)
+                Unit->StartAttack(TargetUnit);
+            break;
+
+        case EUnitCommand::Follow:
+            if (TargetUnit)
+                Unit->Follow(TargetUnit);
+            break;
+
+        default:
+            break;
+        }
+    }
 }
 
-void ARTSPlayerController::SetTeamID(int32 TeamID)
+void ARTSPlayerController::MoveSelectedUnitsTo(const TArray<FVector> &Destinations)
 {
-    MyTeamID = TeamID;
+    for (int32 i = 0; i < SelectedUnits.Num(); ++i)
+    {
+        if (SelectedUnits[i])
+        {
+            SelectedUnits[i]->MoveTo(Destinations[i]);
+        }
+    }
 }
