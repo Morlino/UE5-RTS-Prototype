@@ -85,6 +85,11 @@ void ARTSUnit::MoveToLocation(const FVector &TargetLocation)
 	}
 }
 
+void ARTSUnit::Attack(ARTSUnit *Unit)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Attacking"));
+}
+
 float ARTSUnit::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser)
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);

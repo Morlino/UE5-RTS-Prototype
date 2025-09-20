@@ -121,28 +121,36 @@ void ARTSPlayerController::OnRMouseDown()
 {
     UE_LOG(LogTemp, Warning, TEXT("OnRMouseDown"));
 
-    // Get Cursor location in the world
     FHitResult HitResult;
     GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
+
     if (HitResult.bBlockingHit)
     {
-        const FVector TargetLocation = HitResult.Location;
-        int32 Index = 0;
+        ARTSUnit *HitUnit = Cast<ARTSUnit>(HitResult.GetActor());
 
-        for (ARTSUnit *Unit : SelectedUnits)
+        if (HitUnit)
         {
-            if (Unit)
+            if (HitUnit->TeamID != MyTeamID)
             {
-                // Spread them
-                int32 Row = Index / 5;
-                int32 Col = Index % 5;
-                FVector Destination = TargetLocation + FVector(Row * 100.0f, Col * 100.0f, 0.0f);
-                
-                // Move each unit to that Location
-                UE_LOG(LogTemp, Warning, TEXT("Moving"));
-                Unit->MoveToLocation(Destination);
-                ++Index;
+                for (ARTSUnit *Unit : SelectedUnits)
+                {
+                    if (Unit)
+                    {
+                        Unit->Attack(HitUnit);
+                    }
+                }
             }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Clicked friendly unit"));
+            }
+        }
+        else
+        {
+            // Ground clicked: move units
+            FVector TargetLocation = HitResult.Location;
+            TArray<FVector> Destinations = ComputeUnitDestinations(TargetLocation);
+            MoveSelectedUnitsTo(Destinations);
         }
     }
 }
@@ -168,6 +176,39 @@ void ARTSPlayerController::OnLMouseUp()
     UpdateUnitSelection();
 }
 
+TArray<FVector> ARTSPlayerController::ComputeUnitDestinations(const FVector &TargetLocation)
+{
+    TArray<FVector> Destinations;
+    int32 Index = 0;
+    int32 UnitsPerRow = 5;
+    float Spacing = 100.0f;
+    
+    for (ARTSUnit *Unit : SelectedUnits)
+    {
+        if (Unit)
+        {
+            int32 Row = Index / UnitsPerRow;
+            int32 Col = Index % UnitsPerRow;
+            FVector Destination = TargetLocation + FVector(Row * Spacing, Col * Spacing, 0.0f);
+            Destinations.Add(Destination);
+            ++Index;
+        }
+    }
+
+    return Destinations;
+}
+
+void ARTSPlayerController::MoveSelectedUnitsTo(const TArray<FVector> &Destinations)
+{
+    for (int32 i = 0; i < SelectedUnits.Num(); ++i)
+    {
+        if (SelectedUnits[i])
+        {
+            SelectedUnits[i]->MoveToLocation(Destinations[i]);
+        }
+    }
+}
+
 void ARTSPlayerController::UpdateUnitSelection()
 {
     // Define The Selection Rectangle
@@ -183,7 +224,10 @@ void ARTSPlayerController::UpdateUnitSelection()
         ARTSUnit *Unit = *It;
         if (IsUnitOverlappingSelectionRect(Unit, FVector2D(MinX, MinY), FVector2D(MaxX, MaxY)))
         {
-            UnitsInRectangle.Add(Unit);
+            if (Unit->TeamID == MyTeamID)
+            {
+                UnitsInRectangle.Add(Unit);
+            }
         }
     }
 
@@ -262,4 +306,9 @@ void ARTSPlayerController::ClearSelection()
 bool ARTSPlayerController::IsLMouseHolding()
 {
     return bIsLMouseHolding;
+}
+
+void ARTSPlayerController::SetTeamID(int32 TeamID)
+{
+    MyTeamID = TeamID;
 }

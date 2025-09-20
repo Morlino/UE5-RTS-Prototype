@@ -25,9 +25,6 @@ ARTSCameraPawn::ARTSCameraPawn()
 	// Create Camera
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
-
-	// Enable pawn to receive input
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
 // Called when the game starts or when spawned

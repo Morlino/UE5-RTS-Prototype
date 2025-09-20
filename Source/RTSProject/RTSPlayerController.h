@@ -24,6 +24,13 @@ public :
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 MyTeamID;
+
+	bool IsLMouseHolding();
+	void SetSelected(bool bSelected);
+	void SetTeamID(int32 TeamID);
+
 private:
 	class ARTSCameraPawn *CameraPawn;
 	// class ARTSHUD *RTSHUD;
@@ -53,14 +60,13 @@ private:
 	void OnLMouseDown();
 	void OnLMouseUp();
 
+	TArray<FVector> ComputeUnitDestinations(const FVector &TargetLocation);
+	void MoveSelectedUnitsTo(const TArray<FVector>& Destinations);
+
 	// Unit Selection
 	void UpdateUnitSelection();
 	bool IsUnitOverlappingSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max);
 	void AddUnitToSelection(ARTSUnit *Unit);
 	void RemoveUnitFromSelection(ARTSUnit *Unit);
 	void ClearSelection();
-
-public:
-	bool IsLMouseHolding();
-	void SetSelected(bool bSelected);
 };

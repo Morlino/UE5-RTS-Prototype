@@ -19,11 +19,15 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 TeamID;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	void SetSelected(bool bSelected);
 	void MoveToLocation(const FVector &TargetLocation);
+	void Attack(ARTSUnit *Unit);
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
