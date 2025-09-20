@@ -8,6 +8,8 @@
 #include "Components/DecalComponent.h"
 #include "AIController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/WidgetComponent.h"
+#include "HealthBarWidget.h"
 
 // Sets default values
 ARTSUnit::ARTSUnit()
@@ -17,6 +19,10 @@ ARTSUnit::ARTSUnit()
 
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleRoot"));
 	RootComponent = CapsuleComponent;
+	CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	CapsuleComponent->SetCollisionObjectType(ECC_Pawn);
+	CapsuleComponent->SetCollisionResponseToAllChannels(ECR_Block);
+	CapsuleComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	CapsuleComponent->InitCapsuleSize(42.0f, 96.0f);
 	CapsuleComponent->SetCanEverAffectNavigation(false);
 
@@ -36,6 +42,19 @@ ARTSUnit::ARTSUnit()
 	MovementComponent->MaxSpeed = Stats.MovementSpeed;
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBar"));
+	HealthBarWidget->SetupAttachment(RootComponent);
+	HealthBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	HealthBarWidget->SetDrawSize(FVector2D(100.f, 20.f));
+	HealthBarWidget->SetRelativeLocation(FVector(0.f, 0.f, 120.f));
+
+	// Load the Blueprint class
+	static ConstructorHelpers::FClassFinder<UUserWidget> HealthBarBPClass(TEXT("/Game/Blueprints/UI/WBP_HealthProgressBar"));
+	if (HealthBarBPClass.Succeeded())
+	{
+		HealthBarWidget->SetWidgetClass(HealthBarBPClass.Class);
+	}
 }
 
 
@@ -72,14 +91,14 @@ void ARTSUnit::SetSelected(bool bSelected)
 
 void ARTSUnit::MoveTo(const FVector &TargetLocation)
 {
-
 	MoveTarget = TargetLocation;
 	CurrentState = EUnitState::Moving;
 	bIsMovingToTarget = true;
-
+	
 	if (AIController)
 	{
-		AIController->MoveToLocation(TargetLocation);
+		float AcceptanceRadius = 50.0f;
+		AIController->MoveToLocation(TargetLocation, AcceptanceRadius);
 	}
 }
 
@@ -123,6 +142,8 @@ void ARTSUnit::BeginPlay()
 	Super::BeginPlay();
 
 	AIController = Cast<AAIController>(GetController());
+
+	UpdateHealthBar();
 }
 
 void ARTSUnit::UpdateMovement(float DeltaTime)
@@ -191,18 +212,37 @@ void ARTSUnit::UpdateFollow(float DeltaTime)
 	AIController->MoveToActor(CurrentTarget, FollowDistance);
 }
 
-float ARTSUnit::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser)
+float ARTSUnit::TakeDamage(float DamageAmount, FDamageEvent const &DamageEvent, AController *EventInstigator, AActor *DamageCauser)
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	UE_LOG(LogTemp, Warning, TEXT("Takes %f Damage"), ActualDamage);
+	UE_LOG(LogTemp, Warning, TEXT("%s takes %f damage"), *GetName(), ActualDamage);
 
 	Stats.Health -= ActualDamage;
+	Stats.Health = FMath::Clamp(Stats.Health, 0.0f, Stats.MaxHealth);
+
+	// Update floating HP bar
+	UpdateHealthBar();
+
 	if (Stats.Health <= 0.0f)
 	{
 		Die();
 	}
 
 	return ActualDamage;
+}
+
+void ARTSUnit::UpdateHealthBar()
+{
+	if (!HealthBarWidget)
+		return;
+
+	if (UUserWidget *Widget = HealthBarWidget->GetUserWidgetObject())
+	{
+		if (UHealthBarWidget *HealthWidget = Cast<UHealthBarWidget>(Widget))
+		{
+			HealthWidget->UpdateHealth(Stats.Health / Stats.MaxHealth);
+		}
+	}
 }
 
 void ARTSUnit::Die()

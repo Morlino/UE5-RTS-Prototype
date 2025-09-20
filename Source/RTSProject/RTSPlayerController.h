@@ -91,4 +91,5 @@ private:
 	// --------------------------
 	void IssueCommandToUnits(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation = FVector::ZeroVector, ARTSUnit *TargetUnit = nullptr);
 	void MoveSelectedUnitsTo(const TArray<FVector> &Destinations);
+	TArray<FVector> ComputeUnitDestinations(const FVector &Center, int32 NumUnits, float Spacing);
 };

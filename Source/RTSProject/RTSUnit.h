@@ -103,10 +103,14 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Movement")
 	class UFloatingPawnMovement *MovementComponent;
 
+	UPROPERTY(VisibleAnywhere, Category = "UI")
+	class UWidgetComponent *HealthBarWidget;
+
 	// AI
 	class AAIController *AIController;
 
 	// Damage & death
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
+	void UpdateHealthBar();
 	virtual void Die();
 };

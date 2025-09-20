@@ -283,15 +283,26 @@ void ARTSPlayerController::ClearSelection()
 
 void ARTSPlayerController::IssueCommandToUnits(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation, ARTSUnit *TargetUnit)
 {
-    for (ARTSUnit *Unit : Units)
+    if (Units.Num() == 0) return;
+
+    // Only compute formation offsets for Move commands
+    TArray<FVector> MoveDestinations;
+    if (Command == EUnitCommand::Move)
     {
+        MoveDestinations = ComputeUnitDestinations(TargetLocation, Units.Num(), 100.f); // 100.f spacing
+    }
+
+    for (int32 i = 0; i < Units.Num(); i++)
+    {
+        ARTSUnit *Unit = Units[i];
         if (!Unit)
             continue;
 
         switch (Command)
         {
         case EUnitCommand::Move:
-            Unit->MoveTo(TargetLocation);
+            // Each unit gets its own offset destination
+            Unit->MoveTo(MoveDestinations[i]);
             break;
 
         case EUnitCommand::Attack:
@@ -310,13 +321,24 @@ void ARTSPlayerController::IssueCommandToUnits(const TArray<ARTSUnit *> &Units, 
     }
 }
 
-void ARTSPlayerController::MoveSelectedUnitsTo(const TArray<FVector> &Destinations)
+TArray<FVector> ARTSPlayerController::ComputeUnitDestinations(const FVector &Center, int32 NumUnits, float Spacing)
 {
-    for (int32 i = 0; i < SelectedUnits.Num(); ++i)
+    TArray<FVector> Destinations;
+
+    if (NumUnits == 0)
+        return Destinations;
+
+    int32 Rows = FMath::CeilToInt(FMath::Sqrt(static_cast<float>(NumUnits)));
+    int32 Cols = FMath::CeilToInt(static_cast<float>(NumUnits) / Rows);
+
+    for (int32 i = 0; i < NumUnits; i++)
     {
-        if (SelectedUnits[i])
-        {
-            SelectedUnits[i]->MoveTo(Destinations[i]);
-        }
+        int32 Row = i / Cols;
+        int32 Col = i % Cols;
+
+        FVector Offset((Col - Cols / 2) * Spacing, (Row - Rows / 2) * Spacing, 0.f);
+        Destinations.Add(Center + Offset);
     }
+
+    return Destinations;
 }
