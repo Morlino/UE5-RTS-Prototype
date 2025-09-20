@@ -33,6 +33,7 @@ ARTSUnit::ARTSUnit()
 
     MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
     MovementComponent->UpdatedComponent = RootComponent;
+	MovementComponent->MaxSpeed = Stats.MovementSpeed;
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }

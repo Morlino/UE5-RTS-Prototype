@@ -27,7 +27,7 @@ struct FUnitStats
 	float MaxHealth = 400.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float MovementSpeed = 100.f;
+	float MovementSpeed = 1000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float AttackDamage = 50.f;
