@@ -43,8 +43,19 @@ void ARTSGameMode::PostLogin(APlayerController *NewPlayer)
 
 void ARTSGameMode::AssignTeamID(ARTSPlayerController *NewController, int32 PlayerIndex)
 {
+    if (!NewController)
+        return;
+
+    ARTSPlayerState *PS = NewController->GetPlayerState<ARTSPlayerState>();
+    if (!PS)
+    {
+        UE_LOG(LogTemp, Error, TEXT("PlayerState not valid for AssignTeamID"));
+        return;
+    }
+
     int32 AssignedTeamID = (PlayerIndex == 1) ? 1 : 2; // Can expand later
-    NewController->SetTeamID(AssignedTeamID);
+    PS->TeamID = AssignedTeamID;
+
     UE_LOG(LogTemp, Warning, TEXT("Assigned TeamID %d to player"), AssignedTeamID);
 }
 

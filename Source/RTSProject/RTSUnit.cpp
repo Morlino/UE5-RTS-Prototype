@@ -6,16 +6,20 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/DecalComponent.h"
-#include "AIController.h"
-#include "Kismet/GameplayStatics.h"
 #include "Components/WidgetComponent.h"
 #include "HealthBarWidget.h"
+#include "AIController.h"
+#include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ARTSUnit::ARTSUnit()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	bReplicates = true;			// replicate this actor to clients
+	SetReplicateMovement(true); // replicate its movement automatically
 
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleRoot"));
 	RootComponent = CapsuleComponent;
@@ -39,7 +43,7 @@ ARTSUnit::ARTSUnit()
 
     MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
     MovementComponent->UpdatedComponent = RootComponent;
-	MovementComponent->MaxSpeed = Stats.MovementSpeed;
+	MovementComponent->MaxSpeed = MovementSpeed;
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -128,7 +132,7 @@ void ARTSUnit::Attack(ARTSUnit *TargetUnit)
 
 	UE_LOG(LogTemp, Warning, TEXT("Attacking %s"), *TargetUnit->GetName());
 
-	UGameplayStatics::ApplyDamage(TargetUnit, Stats.AttackDamage, GetController(), this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(TargetUnit, AttackDamage, GetController(), this, UDamageType::StaticClass());
 }
 
 void ARTSUnit::StopAttack()
@@ -160,9 +164,10 @@ void ARTSUnit::UpdateMovement(float DeltaTime)
 		bIsMovingToTarget = false;
 	}
 }
+
 void ARTSUnit::UpdateAttack(float DeltaTime)
 {
-	if (!CurrentTarget || CurrentTarget->Stats.Health <= 0 || !IsValid(CurrentTarget))
+	if (!CurrentTarget || CurrentTarget->Health <= 0 || !IsValid(CurrentTarget))
 	{
 		StopAttack();
 		CurrentState = EUnitState::Idle;
@@ -170,32 +175,37 @@ void ARTSUnit::UpdateAttack(float DeltaTime)
 	}
 
 	float Distance = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
-	float EffectiveAttackRange = Stats.AttackRange + GetSimpleCollisionRadius() + CurrentTarget->GetSimpleCollisionRadius();
+	float EffectiveAttackDistance = AttackRange + GetSimpleCollisionRadius() + CurrentTarget->GetSimpleCollisionRadius() + 5.0f;
 
-	if (Distance > EffectiveAttackRange)
+	if (Distance > EffectiveAttackDistance)
 	{
-		if (!bIsMovingToTarget)
+		// Always move toward the target if it's out of range
+		if (AIController)
 		{
-			AIController->MoveToActor(CurrentTarget, Stats.AttackRange);
+			AIController->MoveToActor(CurrentTarget);
 			bIsMovingToTarget = true;
+			UE_LOG(LogTemp, Warning, TEXT("Move closer"));
 		}
 	}
 	else
 	{
+		// Stop movement if in range
 		if (bIsMovingToTarget && AIController)
 		{
 			AIController->StopMovement();
 			bIsMovingToTarget = false;
+			UE_LOG(LogTemp, Warning, TEXT("Stopped"));
 		}
 
 		// Attack logic
 		TimeSinceLastAttack += DeltaTime;
-		float AttackInterval = 1.0f / Stats.AttackSpeed;
+		float AttackInterval = 1.0f / AttackSpeed;
 		if (TimeSinceLastAttack >= AttackInterval)
 		{
 			Attack(CurrentTarget);
 			TimeSinceLastAttack = 0.0f;
 		}
+		UE_LOG(LogTemp, Warning, TEXT("Attacking"));
 	}
 }
 
@@ -205,42 +215,51 @@ void ARTSUnit::UpdateFollow(float DeltaTime)
 		return;
 
 	// Adjust the distance based on Target Size
-	const FBox TargetBox = CurrentTarget->GetComponentsBoundingBox();
-	const float TargetRadius = TargetBox.GetExtent().Size2D();
-	const float FollowDistance = TargetRadius + 50.0f; // 50 units extra buffer
+	float AcceptanceRadius = CurrentTarget->GetSimpleCollisionRadius() + 5.0f;
 
-	AIController->MoveToActor(CurrentTarget, FollowDistance);
+	AIController->MoveToActor(CurrentTarget, AcceptanceRadius);
+}
+
+void ARTSUnit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ARTSUnit, Health);
+	DOREPLIFETIME(ARTSUnit, TeamID);
 }
 
 float ARTSUnit::TakeDamage(float DamageAmount, FDamageEvent const &DamageEvent, AController *EventInstigator, AActor *DamageCauser)
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	UE_LOG(LogTemp, Warning, TEXT("%s takes %f damage"), *GetName(), ActualDamage);
 
-	Stats.Health -= ActualDamage;
-	Stats.Health = FMath::Clamp(Stats.Health, 0.0f, Stats.MaxHealth);
+    if (HasAuthority())
+    {
+        Health = FMath::Clamp(Health - ActualDamage, 0.f, MaxHealth);
 
-	// Update floating HP bar
+		UpdateHealthBar();
+
+		if (Health <= 0.f)
+        {
+            Die();
+        }
+    }
+
+    return ActualDamage;
+}
+
+void ARTSUnit::OnRep_Health()
+{
+	// runs automatically on clients when Health changes
 	UpdateHealthBar();
-
-	if (Stats.Health <= 0.0f)
-	{
-		Die();
-	}
-
-	return ActualDamage;
 }
 
 void ARTSUnit::UpdateHealthBar()
 {
-	if (!HealthBarWidget)
-		return;
-
 	if (UUserWidget *Widget = HealthBarWidget->GetUserWidgetObject())
 	{
 		if (UHealthBarWidget *HealthWidget = Cast<UHealthBarWidget>(Widget))
 		{
-			HealthWidget->UpdateHealth(Stats.Health / Stats.MaxHealth);
+			HealthWidget->UpdateHealth(Health / MaxHealth);
 		}
 	}
 }

@@ -41,7 +41,7 @@ void ARTSCameraPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (!PC && !PC->GetLocalPlayer())
+	if (!PC || !PC->IsLocalController())
 		return;
 
 	// Lock Camera if Player hold Left Click
@@ -56,10 +56,19 @@ void ARTSCameraPawn::Tick(float DeltaTime)
 		TotalVelocity += DragVelocity;
 	}
 
-	SetActorLocation(GetActorLocation() + TotalVelocity * DeltaTime);
+	// Compute new location
+	FVector NewLocation = GetActorLocation() + TotalVelocity * DeltaTime;
 
+	// Clamp to map bounds (only X and Y, keep Z for height)
+	NewLocation.X = FMath::Clamp(NewLocation.X, MinCameraBounds.X, MaxCameraBounds.X);
+	NewLocation.Y = FMath::Clamp(NewLocation.Y, MinCameraBounds.Y, MaxCameraBounds.Y);
+
+	SetActorLocation(NewLocation);
+
+	// Smooth zoom
 	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, DesiredArmLength, DeltaTime, ZoomInterpSpeed);
 
+	// Adjust pitch based on zoom
 	float Alpha = (SpringArm->TargetArmLength - MinZoom) / (MaxZoom - MinZoom);
 	float NewPitch = FMath::Lerp(MaxPitch, MinPitch, Alpha);
 	SpringArm->SetRelativeRotation(FRotator(NewPitch, SpringArm->GetRelativeRotation().Yaw, 0.0f));
@@ -92,25 +101,32 @@ FVector ARTSCameraPawn::GetKeyboardVelocity()
 
 FVector ARTSCameraPawn::GetEdgeScrollVelocity()
 {
-	// Reset velocities each frame
+	// Get viewport and mouse position
+	int32 ViewportSizeX, ViewportSizeY;
+	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
+
+	float MouseX, MouseY;
+	if (!PC->GetMousePosition(MouseX, MouseY))
+	{
+		// Mouse not over viewport (Alt-Tab)
+		return FVector::ZeroVector;
+	}
+
+	// Clamp mouse to viewport bounds
+	MouseX = FMath::Clamp(MouseX, 0.0f, static_cast<float>(ViewportSizeX));
+	MouseY = FMath::Clamp(MouseY, 0.0f, static_cast<float>(ViewportSizeY));
+
 	FVector EdgeScrollVelocity = FVector::ZeroVector;
 
-	// Get Cursor location
-	int32 ViewportSizeX, ViewportSizeY;
-	float MouseX, MouseY;
-	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
-	PC->GetMousePosition(MouseX, MouseY);
-
-	bool bViewportFocused = PC->GetLocalPlayer()->ViewportClient->Viewport->HasFocus();
-	UE_LOG(LogTemp, Warning, TEXT("bViewportFocused=%d"), bViewportFocused);
-
+	// Vertical scrolling
 	if (MouseY < BorderOffset)
 		EdgeScrollVelocity += GetActorForwardVector();
 	else if (MouseY > ViewportSizeY - BorderOffset)
-		EdgeScrollVelocity += -GetActorForwardVector();
+		EdgeScrollVelocity -= GetActorForwardVector();
 
+	// Horizontal scrolling
 	if (MouseX < BorderOffset)
-		EdgeScrollVelocity += -GetActorRightVector();
+		EdgeScrollVelocity -= GetActorRightVector();
 	else if (MouseX > ViewportSizeX - BorderOffset)
 		EdgeScrollVelocity += GetActorRightVector();
 

@@ -9,6 +9,8 @@
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
 #include "ResourceWidget.h"
+#include "Net/UnrealNetwork.h"
+#include "RTSPlayerState.h"
 
 ARTSPlayerController::ARTSPlayerController()
 {
@@ -33,10 +35,7 @@ void ARTSPlayerController::Tick(float DeltaTime)
     }
 }
 
-void ARTSPlayerController::SetTeamID(int32 TeamID)
-{
-    MyTeamID = TeamID;
-}
+
 
 bool ARTSPlayerController::IsLMouseHolding() const
 {
@@ -54,6 +53,7 @@ void ARTSPlayerController::BeginPlay()
     SetInputMode(InputMode);
 
     CameraPawn = Cast<ARTSCameraPawn>(GetPawn());
+    PS = GetPlayerState<ARTSPlayerState>();
     
     // Set HUD
     RTSHUD = Cast<ARTSHUD>(GetHUD());
@@ -173,21 +173,25 @@ void ARTSPlayerController::OnRMouseDown()
     ARTSUnit *HitUnit = Cast<ARTSUnit>(HitResult.GetActor());
     if (HitUnit)
     {
-        if (HitUnit->TeamID != MyTeamID)
+        ARTSPlayerState *LocalPS = GetPlayerState<ARTSPlayerState>();
+        if (LocalPS)
         {
-            // Attack enemy
-            IssueCommandToUnits(SelectedUnits, EUnitCommand::Attack, FVector::ZeroVector, HitUnit);
-        }
-        else
-        {
-            // Follow ally
-            IssueCommandToUnits(SelectedUnits, EUnitCommand::Follow, FVector::ZeroVector, HitUnit);
+            if (HitUnit->TeamID != LocalPS->TeamID)
+            {
+                // Attack enemy
+                ServerIssueCommand(SelectedUnits, EUnitCommand::Attack, FVector::ZeroVector, HitUnit);
+            }
+            else
+            {
+                // Follow ally
+                ServerIssueCommand(SelectedUnits, EUnitCommand::Follow, FVector::ZeroVector, HitUnit);
+            }
         }
     }
     else
     {
         // Move to ground
-        IssueCommandToUnits(SelectedUnits, EUnitCommand::Move, HitResult.Location, nullptr);
+        ServerIssueCommand(SelectedUnits, EUnitCommand::Move, HitResult.Location, nullptr);
     }
 }
 
@@ -206,9 +210,14 @@ void ARTSPlayerController::UpdateUnitSelection()
         ARTSUnit *Unit = *It;
         if (IsUnitOverlappingSelectionRect(Unit, FVector2D(MinX, MinY), FVector2D(MaxX, MaxY)))
         {
-            if (Unit->TeamID == MyTeamID)
+            ARTSPlayerState *LocalPS = GetPlayerState<ARTSPlayerState>();
+            if (LocalPS)
             {
-                UnitsInRectangle.Add(Unit);
+                UE_LOG(LogTemp, Warning, TEXT("Unit->TeamID=%d TeamID=%d"), Unit->TeamID, LocalPS->TeamID);
+                if (Unit->TeamID == LocalPS->TeamID)
+                {
+                    UnitsInRectangle.Add(Unit);
+                }
             }
         }
     }
@@ -285,9 +294,10 @@ void ARTSPlayerController::ClearSelection()
     SelectedUnits.Empty();
 }
 
-void ARTSPlayerController::IssueCommandToUnits(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation, ARTSUnit *TargetUnit)
+void ARTSPlayerController::ServerIssueCommand_Implementation(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation, ARTSUnit *TargetUnit)
 {
-    if (Units.Num() == 0) return;
+    if (Units.Num() == 0)
+        return;
 
     // Only compute formation offsets for Move commands
     TArray<FVector> MoveDestinations;

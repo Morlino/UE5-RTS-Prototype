@@ -33,6 +33,7 @@ void ARTSPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutL
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+    DOREPLIFETIME(ARTSPlayerState, TeamID);
     DOREPLIFETIME(ARTSPlayerState, Metal);
     DOREPLIFETIME(ARTSPlayerState, Fuel);
     DOREPLIFETIME(ARTSPlayerState, CurrentSupply);

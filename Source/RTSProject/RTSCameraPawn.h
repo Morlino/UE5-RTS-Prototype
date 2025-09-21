@@ -15,13 +15,28 @@ public:
 	// Sets default values for this pawn's properties
 	ARTSCameraPawn();
 
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	// Example in your ARTSCameraPawn.h
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Limits")
+	FVector2D MinCameraBounds = FVector2D(-5000.0f, -5000.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Limits")
+	FVector2D MaxCameraBounds = FVector2D(5000.0f, 5000.0f);
+
+	// Input / Movement Functions
+	void MoveForward(float Value);
+	void MoveRight(float Value);
+	void Zoom(float Value);
+	void OnDragStart();
+	void OnDragEnd();
+	void DragX(float Value);
+	void DragY(float Value);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 private:
 	// Camera Components
@@ -85,14 +100,4 @@ private:
 	FVector GetTotalVelocity();
 	FVector GetKeyboardVelocity();
 	FVector GetEdgeScrollVelocity();
-
-public:
-	// Input / Movement Functions
-	void MoveForward(float Value);
-	void MoveRight(float Value);
-	void Zoom(float Value);
-	void OnDragStart();
-	void OnDragEnd();
-	void DragX(float Value);
-	void DragY(float Value);
 };

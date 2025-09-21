@@ -24,15 +24,12 @@ public:
 
 	class ARTSHUD *RTSHUD;
 
+	class ARTSPlayerState *PS;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Team info
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Team")
-	int32 MyTeamID;
-
 	UFUNCTION(BlueprintCallable, Category = "Team")
-	void SetTeamID(int32 TeamID);
 
 	bool IsLMouseHolding() const;
 
@@ -92,6 +89,7 @@ private:
 	// Unit commands
 	// --------------------------
 	void IssueCommandToUnits(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation = FVector::ZeroVector, ARTSUnit *TargetUnit = nullptr);
-	void MoveSelectedUnitsTo(const TArray<FVector> &Destinations);
+	UFUNCTION(Server, Reliable)
+	void ServerIssueCommand(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation = FVector::ZeroVector, ARTSUnit *TargetUnit = nullptr);
 	TArray<FVector> ComputeUnitDestinations(const FVector &Center, int32 NumUnits, float Spacing);
 };

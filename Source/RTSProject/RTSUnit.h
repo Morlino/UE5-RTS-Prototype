@@ -15,30 +15,6 @@ enum class EUnitState : uint8
 	Following 	UMETA(DisplayName = "Following")
 };
 
-USTRUCT(BlueprintType)
-struct FUnitStats
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float Health = 400.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float MaxHealth = 400.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float MovementSpeed = 1000.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float AttackDamage = 50.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float AttackSpeed = 1.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float AttackRange = 100.f;
-};
-
 UCLASS()
 class RTSPROJECT_API ARTSUnit : public APawn
 {
@@ -52,7 +28,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	// Team info
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Unit")
+	UPROPERTY(Replicated, BlueprintReadWrite, EditAnywhere, Category = "Unit")
 	int32 TeamID;
 
 	// Public interface for unit behavior
@@ -64,9 +40,23 @@ public:
 	void StopAttack();
 
 protected:
-	// Stats
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	FUnitStats Stats;
+	UPROPERTY(ReplicatedUsing = OnRep_Health, EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float Health = 400.f;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float MaxHealth = 400.f;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float MovementSpeed = 1000.f;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float AttackDamage = 50.f;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float AttackSpeed = 1.f;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float AttackRange = 100.f;
 
 	// Unit state
 	UPROPERTY(BlueprintReadOnly, Category = "State")
@@ -108,6 +98,9 @@ private:
 
 	// AI
 	class AAIController *AIController;
+
+	UFUNCTION()
+	void OnRep_Health();
 
 	// Damage & death
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
