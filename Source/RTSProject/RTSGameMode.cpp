@@ -7,12 +7,14 @@
 #include "RTSHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
+#include "RTSPlayerState.h"
 
 ARTSGameMode::ARTSGameMode()
 {
     PlayerControllerClass = ARTSPlayerController::StaticClass();
     DefaultPawnClass = ARTSCameraPawn::StaticClass();
     HUDClass = ARTSHUD::StaticClass();
+    PlayerStateClass = ARTSPlayerState::StaticClass();
 }
 
 void ARTSGameMode::PostLogin(APlayerController *NewPlayer)

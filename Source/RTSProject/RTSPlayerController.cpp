@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
+#include "ResourceWidget.h"
 
 ARTSPlayerController::ARTSPlayerController()
 {
@@ -25,7 +26,7 @@ void ARTSPlayerController::Tick(float DeltaTime)
     if (bIsLMouseHolding)
     {
         GetMousePosition(CurrentMousePos.X, CurrentMousePos.Y);
-        if (ARTSHUD *RTSHUD = Cast<ARTSHUD>(GetHUD()))
+        if (RTSHUD)
         {
             RTSHUD->UpdateSelection(CurrentMousePos);
         }
@@ -53,6 +54,9 @@ void ARTSPlayerController::BeginPlay()
     SetInputMode(InputMode);
 
     CameraPawn = Cast<ARTSCameraPawn>(GetPawn());
+    
+    // Set HUD
+    RTSHUD = Cast<ARTSHUD>(GetHUD());
 }
 
 void ARTSPlayerController::SetupInputComponent()
@@ -139,7 +143,7 @@ void ARTSPlayerController::OnLMouseDown()
 {
     bIsLMouseHolding = true;
     GetMousePosition(InitialMousePos.X, InitialMousePos.Y);
-    if (ARTSHUD *RTSHUD = Cast<ARTSHUD>(GetHUD()))
+    if (RTSHUD)
     {
         RTSHUD->StartSelection(InitialMousePos);
     }
@@ -148,7 +152,7 @@ void ARTSPlayerController::OnLMouseDown()
 void ARTSPlayerController::OnLMouseUp()
 {
     bIsLMouseHolding = false;
-    if (ARTSHUD *RTSHUD = Cast<ARTSHUD>(GetHUD()))
+    if (RTSHUD)
     {
         RTSHUD->EndSelection();
     }

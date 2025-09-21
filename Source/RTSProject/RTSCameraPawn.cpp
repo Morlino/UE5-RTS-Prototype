@@ -101,6 +101,9 @@ FVector ARTSCameraPawn::GetEdgeScrollVelocity()
 	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
 	PC->GetMousePosition(MouseX, MouseY);
 
+	bool bViewportFocused = PC->GetLocalPlayer()->ViewportClient->Viewport->HasFocus();
+	UE_LOG(LogTemp, Warning, TEXT("bViewportFocused=%d"), bViewportFocused);
+
 	if (MouseY < BorderOffset)
 		EdgeScrollVelocity += GetActorForwardVector();
 	else if (MouseY > ViewportSizeY - BorderOffset)

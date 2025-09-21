@@ -22,6 +22,8 @@ public:
 	// Constructor (if needed)
 	ARTSPlayerController();
 
+	class ARTSHUD *RTSHUD;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 

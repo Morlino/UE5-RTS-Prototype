@@ -3,6 +3,31 @@
 
 #include "RTSHUD.h"
 #include "Engine/Canvas.h"
+#include "ResourceWidget.h"
+#include "RTSPlayerState.h"
+
+void ARTSHUD::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (ResourceWidgetClass)
+    {
+        ResourceWidget = CreateWidget<UResourceWidget>(GetWorld(), ResourceWidgetClass);
+        if (ResourceWidget)
+        {
+            ResourceWidget->AddToViewport();
+
+            // Initialize resource display from PlayerState
+            if (APlayerController *PC = GetOwningPlayerController())
+            {
+                if (ARTSPlayerState *PS = PC->GetPlayerState<ARTSPlayerState>())
+                {
+                    UpdateResourceDisplay(PS->Metal, PS->Fuel, PS->CurrentSupply, PS->MaxSupply);
+                }
+            }
+        }
+    }
+}
 
 void ARTSHUD::DrawHUD()
 {
@@ -43,4 +68,12 @@ void ARTSHUD::UpdateSelection(const FVector2D &CurrentPos)
 void ARTSHUD::EndSelection()
 {
     bIsSelecting = false;
+}
+
+void ARTSHUD::UpdateResourceDisplay(int32 Metal, int32 Fuel, int32 CurrentSupply, int32 MaxSupply)
+{
+    if (ResourceWidget)
+    {
+        ResourceWidget->UpdateResources(Metal, Fuel, CurrentSupply, MaxSupply);
+    }
 }
