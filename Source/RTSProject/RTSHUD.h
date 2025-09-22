@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
+#include "CommandCardWidget.h"
+
 #include "RTSHUD.generated.h"
 
 /**
@@ -18,8 +20,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UResourceWidget> ResourceWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UCommandCardWidget> CommandCardWidgetClass;
+
 	UPROPERTY(meta = (BindWidget))
 	class UResourceWidget *ResourceWidget;
+
+	UPROPERTY(meta = (BindWidget))
+	class UCommandCardWidget *CommandCardWidget;
+
 	virtual void DrawHUD() override;
 
 	void StartSelection(const FVector2D& StartPos);
@@ -28,6 +37,8 @@ public:
 
 	class UResourceWidget *GetResourceWidget() const;
 	void UpdateResourceDisplay(int32 Metal, int32 Fuel, int32 CurrentSupply, int32 MaxSupply);
+
+	void UpdateCommandCard(const TArray<FCommandData> &Commands);
 
 protected :
 	// Called when the game starts or when spawned

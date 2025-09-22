@@ -13,5 +13,7 @@ UCLASS()
 class RTSPROJECT_API ARTSWorker : public ARTSUnit
 {
 	GENERATED_BODY()
-	
+
+public:
+	ARTSWorker();
 };

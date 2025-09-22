@@ -158,6 +158,15 @@ void ARTSPlayerController::OnLMouseUp()
     }
 
     UpdateUnitSelection();
+
+    if (SelectedUnits.Num() > 0 && RTSHUD)
+    {
+        // Take the first selected unit
+        UE_LOG(LogTemp, Warning, TEXT("Showing Card"));
+
+        ARTSUnit *FirstUnit = SelectedUnits[0];
+        RTSHUD->UpdateCommandCard(FirstUnit->CommandCard);
+    }
 }
 
 void ARTSPlayerController::OnRMouseDown()

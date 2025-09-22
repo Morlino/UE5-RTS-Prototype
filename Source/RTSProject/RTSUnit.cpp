@@ -59,8 +59,11 @@ ARTSUnit::ARTSUnit()
 	{
 		HealthBarWidget->SetWidgetClass(HealthBarBPClass.Class);
 	}
-}
 
+	SupportedActions = {EUnitAction::Move,
+						EUnitAction::Stop,
+						EUnitAction::Attack};
+}
 
 // Called every frame
 void ARTSUnit::Tick(float DeltaTime)
@@ -148,6 +151,33 @@ void ARTSUnit::BeginPlay()
 	AIController = Cast<AAIController>(GetController());
 
 	UpdateHealthBar();
+
+	CommandCard.Empty();
+
+	if (!CommandCardData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CommandCardData asset is nullptr!"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Populating CommandCard for unit. SupportedActions.Num = %d"), SupportedActions.Num());
+
+	for (EUnitAction Action : SupportedActions)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Processing action: %d"), (uint8)Action);
+
+		if (const FCommandData *Cmd = CommandCardData->GetCommand(Action))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Found CommandData: %s"), *Cmd->ActionName.ToString());
+			CommandCard.Add(*Cmd);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No CommandData found for action %d"), (uint8)Action);
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Finished populating CommandCard. CommandCard.Num = %d"), CommandCard.Num());
 }
 
 void ARTSUnit::UpdateMovement(float DeltaTime)

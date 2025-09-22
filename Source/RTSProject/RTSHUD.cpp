@@ -27,6 +27,15 @@ void ARTSHUD::BeginPlay()
             }
         }
     }
+
+    if (CommandCardWidgetClass)
+    {
+        CommandCardWidget = CreateWidget<UCommandCardWidget>(GetWorld(), CommandCardWidgetClass);
+        if (CommandCardWidget)
+        {
+            CommandCardWidget->AddToViewport();
+        }
+    }
 }
 
 void ARTSHUD::DrawHUD()
@@ -75,5 +84,14 @@ void ARTSHUD::UpdateResourceDisplay(int32 Metal, int32 Fuel, int32 CurrentSupply
     if (ResourceWidget)
     {
         ResourceWidget->UpdateResources(Metal, Fuel, CurrentSupply, MaxSupply);
+    }
+}
+
+void ARTSHUD::UpdateCommandCard(const TArray<FCommandData> &Commands)
+{
+    if (CommandCardWidget)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("PopulateCommandCard"));
+        CommandCardWidget->PopulateCommandCard(Commands);
     }
 }
