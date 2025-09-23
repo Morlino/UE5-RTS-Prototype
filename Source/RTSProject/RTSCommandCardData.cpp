@@ -2,8 +2,3 @@
 
 
 #include "RTSCommandCardData.h"
-
-const FCommandData *URTSCommandCardData::GetCommand(ECommandType Action) const
-{
-    return Commands.Find(Action);
-}

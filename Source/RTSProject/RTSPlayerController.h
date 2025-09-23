@@ -45,6 +45,8 @@ private:
 	FVector2D InitialMousePos;
 	FVector2D CurrentMousePos;
 
+	bool bIsSubCommand = false;
+
 	// Selected units
 	UPROPERTY()
 	TArray<ARTSUnit *> SelectedUnits;
@@ -67,6 +69,11 @@ private:
 	void OnLMouseDown();
 	void OnLMouseUp();
 	void OnRMouseDown();
+
+	// --------------------------
+	// Command Card control
+	// --------------------------
+	void OnCommandCard(FKey Key);
 
 	// --------------------------
 	// Unit selection helpers

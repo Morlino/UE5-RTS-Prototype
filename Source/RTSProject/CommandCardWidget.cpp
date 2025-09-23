@@ -7,7 +7,7 @@
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
 
-void UCommandCardWidget::PopulateCommandCard(const TArray<FCommandData> &Commands)
+void UCommandCardWidget::PopulateCommandCard(const TArray<URTSCommandCardData *> &Commands)
 {
     if (!GridPanel)
     {
@@ -17,7 +17,6 @@ void UCommandCardWidget::PopulateCommandCard(const TArray<FCommandData> &Command
 
     UE_LOG(LogTemp, Warning, TEXT("Populating %d commands"), Commands.Num());
 
-    // Loop through commands and replace icons in existing buttons
     const int32 TotalButtons = GridPanel->GetChildrenCount();
 
     for (int32 i = 0; i < TotalButtons; ++i)
@@ -26,16 +25,16 @@ void UCommandCardWidget::PopulateCommandCard(const TArray<FCommandData> &Command
         if (!Btn)
             continue;
 
-        if (i < Commands.Num())
+        if (i < Commands.Num() && Commands[i])
         {
-            const FCommandData &Cmd = Commands[i];
+            URTSCommandCardData *Cmd = Commands[i];
 
             if (UImage *Img = Cast<UImage>(Btn->GetChildAt(0)))
             {
-                if (Cmd.Icon)
+                if (Cmd->Icon)
                 {
                     FSlateBrush Brush = Img->GetBrush();
-                    Brush.SetResourceObject(Cmd.Icon);
+                    Brush.SetResourceObject(Cmd->Icon);
                     Img->SetBrush(Brush);
                 }
             }
@@ -45,8 +44,8 @@ void UCommandCardWidget::PopulateCommandCard(const TArray<FCommandData> &Command
 
             if (UUniformGridSlot *GridSlot = Cast<UUniformGridSlot>(Btn->Slot))
             {
-                int32 Row = Cmd.GridIndex / NumColumns;
-                int32 Col = Cmd.GridIndex % NumColumns;
+                int32 Row = Cmd->GridIndex / NumColumns;
+                int32 Col = Cmd->GridIndex % NumColumns;
 
                 GridSlot->SetRow(Row);
                 GridSlot->SetColumn(Col);
@@ -54,7 +53,6 @@ void UCommandCardWidget::PopulateCommandCard(const TArray<FCommandData> &Command
         }
         else
         {
-            // Hide buttons that aren’t used
             Btn->SetVisibility(ESlateVisibility::Hidden);
         }
     }

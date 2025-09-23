@@ -76,6 +76,25 @@ void ARTSPlayerController::SetupInputComponent()
     InputComponent->BindAction("RightClick", IE_Pressed, this, &ARTSPlayerController::OnRMouseDown);
     InputComponent->BindAction("LeftClick", IE_Pressed, this, &ARTSPlayerController::OnLMouseDown);
     InputComponent->BindAction("LeftClick", IE_Released, this, &ARTSPlayerController::OnLMouseUp);
+
+    // Command Card
+    InputComponent->BindAction("CommandCardQ", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardW", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardE", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardR", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardT", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+
+    InputComponent->BindAction("CommandCardA", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardS", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardD", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardF", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardG", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+
+    InputComponent->BindAction("CommandCardZ", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardX", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardC", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardV", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+    InputComponent->BindAction("CommandCardB", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
 }
 
 void ARTSPlayerController::PostInitializeComponents()
@@ -153,19 +172,22 @@ void ARTSPlayerController::OnLMouseUp()
 {
     bIsLMouseHolding = false;
     if (RTSHUD)
-    {
         RTSHUD->EndSelection();
-    }
 
-    UpdateUnitSelection();
+    TArray<ARTSUnit *> PreviousSelection = SelectedUnits;
 
-    if (SelectedUnits.Num() > 0 && RTSHUD)
+    UpdateUnitSelection(); // Updates SelectedUnits
+
+    if (!(SelectedUnits == PreviousSelection) && SelectedUnits.Num() > 0 && RTSHUD)
     {
-        // Take the first selected unit
-        UE_LOG(LogTemp, Warning, TEXT("Showing Card"));
-
         ARTSUnit *FirstUnit = SelectedUnits[0];
-        RTSHUD->UpdateCommandCard(FirstUnit->CommandCard);
+
+        // Only update if it's a friendly unit
+        ARTSPlayerState *LocalPS = GetPlayerState<ARTSPlayerState>();
+        if (FirstUnit->TeamID == LocalPS->TeamID)
+        {
+            RTSHUD->UpdateCommandCard(FirstUnit->CommandCardData);
+        }
     }
 }
 
@@ -201,6 +223,31 @@ void ARTSPlayerController::OnRMouseDown()
     {
         // Move to ground
         ServerIssueCommand(SelectedUnits, ECommandType::Move, HitResult.Location, nullptr);
+    }
+}
+
+void ARTSPlayerController::OnCommandCard(FKey Key)
+{
+    if (SelectedUnits.IsEmpty()) return;
+
+    // Find Card by Input Key
+    URTSCommandCardData **CmdPtr = Algo::FindByPredicate(
+        SelectedUnits[0]->CommandCardData,
+        [Key](URTSCommandCardData *Card)
+        { return Card && Card->Hotkey == Key; });
+
+    if (!CmdPtr)
+        return;
+
+    URTSCommandCardData *Cmd = *CmdPtr; // Dereference
+
+    if (Cmd->SubCommands.Num() > 0)
+    {
+        RTSHUD->UpdateCommandCard(Cmd->SubCommands);
+    }
+    else
+    {
+        // Delay Issue command, like when I press Move, cursor should change and wait Click Location
     }
 }
 

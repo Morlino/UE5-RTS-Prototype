@@ -87,7 +87,7 @@ void ARTSHUD::UpdateResourceDisplay(int32 Metal, int32 Fuel, int32 CurrentSupply
     }
 }
 
-void ARTSHUD::UpdateCommandCard(const TArray<FCommandData> &Commands)
+void ARTSHUD::UpdateCommandCard(const TArray<URTSCommandCardData *> &Commands)
 {
     if (CommandCardWidget)
     {

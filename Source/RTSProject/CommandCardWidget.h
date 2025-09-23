@@ -24,5 +24,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CommandCard")
 	int32 NumColumns = 5;
 
-	void PopulateCommandCard(const TArray<FCommandData> &Commands);
+	void PopulateCommandCard(const TArray<URTSCommandCardData *> &Commands);
 };

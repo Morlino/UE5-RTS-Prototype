@@ -38,7 +38,7 @@ public:
 	class UResourceWidget *GetResourceWidget() const;
 	void UpdateResourceDisplay(int32 Metal, int32 Fuel, int32 CurrentSupply, int32 MaxSupply);
 
-	void UpdateCommandCard(const TArray<FCommandData> &Commands);
+	void UpdateCommandCard(const TArray<URTSCommandCardData*> &Commands);
 
 protected :
 	// Called when the game starts or when spawned

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "RTSCommandCardData.h"
+
 #include "RTSUnit.generated.h"
 
 UENUM(BlueprintType)
@@ -33,12 +34,7 @@ public:
 	int32 TeamID;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Command")
-	TArray<ECommandType> SupportedActions;
-
-	TArray<FCommandData> CommandCard;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Command")
-	class URTSCommandCardData *CommandCardData;
+	TArray<URTSCommandCardData*> CommandCardData;
 
 	// Public interface for unit behavior
 	void SetSelected(bool bSelected);
