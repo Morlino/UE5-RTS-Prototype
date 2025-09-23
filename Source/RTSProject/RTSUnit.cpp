@@ -139,6 +139,42 @@ void ARTSUnit::StopAttack()
 	CurrentTarget = nullptr;
 }
 
+void ARTSUnit::ExecuteCommand(URTSCommandCardData *Cmd)
+{
+	if (!Cmd)
+		return;
+
+	if (Cmd->CommandType == ECommandType::Move)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Move"));
+	}
+	else if (Cmd->CommandType == ECommandType::Stop)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Stop"));
+	}
+	else if (Cmd->CommandType == ECommandType::Hold)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Hold"));
+	}
+	else if (Cmd->CommandType == ECommandType::Patrol)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Patrol"));
+	}
+	else if (Cmd->CommandType == ECommandType::Attack)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Attack"));
+	}
+	else
+	{
+		DoUniqueCommand(Cmd);
+	}
+}
+
+void ARTSUnit::DoUniqueCommand(URTSCommandCardData *Cmd)
+{
+	UE_LOG(LogTemp, Warning, TEXT("This guy can't"));
+}
+
 // Called when the game starts or when spawned
 void ARTSUnit::BeginPlay()
 {

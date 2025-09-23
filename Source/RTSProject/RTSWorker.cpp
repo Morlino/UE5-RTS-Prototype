@@ -6,3 +6,11 @@
 ARTSWorker::ARTSWorker()
 {
 }
+
+void ARTSWorker::DoUniqueCommand(URTSCommandCardData *Cmd)
+{
+    if (Cmd->CommandType == ECommandType::BuildTownhall)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("BuildTownhall"));
+    }
+}

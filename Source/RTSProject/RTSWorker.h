@@ -16,4 +16,6 @@ class RTSPROJECT_API ARTSWorker : public ARTSUnit
 
 public:
 	ARTSWorker();
+
+	virtual void DoUniqueCommand(URTSCommandCardData *Cmd) override;
 };

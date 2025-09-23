@@ -230,24 +230,37 @@ void ARTSPlayerController::OnCommandCard(FKey Key)
 {
     if (SelectedUnits.IsEmpty()) return;
 
+    UE_LOG(LogTemp, Warning, TEXT("Pressing %s"), *Key.ToString());
+
+    TArray<URTSCommandCardData *> &SearchArray =
+        CurrentCommandPage.Num() > 0 ? CurrentCommandPage : SelectedUnits[0]->CommandCardData;
+
     // Find Card by Input Key
     URTSCommandCardData **CmdPtr = Algo::FindByPredicate(
-        SelectedUnits[0]->CommandCardData,
-        [Key](URTSCommandCardData *Card)
-        { return Card && Card->Hotkey == Key; });
+        SearchArray,
+        [Key](URTSCommandCardData *Card) { return Card && Card->Hotkey == Key; });
 
-    if (!CmdPtr)
-        return;
-
+    if (!CmdPtr) return;
     URTSCommandCardData *Cmd = *CmdPtr; // Dereference
 
     if (Cmd->SubCommands.Num() > 0)
     {
-        RTSHUD->UpdateCommandCard(Cmd->SubCommands);
+        UE_LOG(LogTemp, Warning, TEXT("Switched to Submenu"));
+        CurrentCommandPage = Cmd->SubCommands;
+        RTSHUD->UpdateCommandCard(CurrentCommandPage);
     }
     else
     {
-        // Delay Issue command, like when I press Move, cursor should change and wait Click Location
+        // Forward to units; each unit decides what to do
+        UE_LOG(LogTemp, Warning, TEXT("Execute command"));
+        for (ARTSUnit *Unit : SelectedUnits)
+        {
+            if (Unit)
+            {
+                Unit->ExecuteCommand(Cmd);
+            }
+        }
+        CurrentCommandPage.Empty();
     }
 }
 

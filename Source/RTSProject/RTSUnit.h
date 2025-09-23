@@ -44,6 +44,9 @@ public:
 	void Attack(ARTSUnit *TargetUnit);
 	void StopAttack();
 
+	void ExecuteCommand(URTSCommandCardData *Cmd);
+	virtual void DoUniqueCommand(URTSCommandCardData *Cmd);
+
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_Health, EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float Health = 400.f;

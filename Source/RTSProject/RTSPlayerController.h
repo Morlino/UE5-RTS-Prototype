@@ -45,7 +45,7 @@ private:
 	FVector2D InitialMousePos;
 	FVector2D CurrentMousePos;
 
-	bool bIsSubCommand = false;
+	TArray<URTSCommandCardData*> CurrentCommandPage;
 
 	// Selected units
 	UPROPERTY()
