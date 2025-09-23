@@ -95,3 +95,17 @@ void ARTSHUD::UpdateCommandCard(const TArray<URTSCommandCardData *> &Commands)
         CommandCardWidget->PopulateCommandCard(Commands);
     }
 }
+
+void ARTSHUD::SetCommandCursor()
+{
+    APlayerController *PC = GetOwningPlayerController();
+    if (PC)
+        PC->CurrentMouseCursor = EMouseCursor::Crosshairs; // SC2-style target
+}
+
+void ARTSHUD::SetDefaultCursor()
+{
+    APlayerController *PC = GetOwningPlayerController();
+    if (PC)
+        PC->CurrentMouseCursor = EMouseCursor::Default; // standard arrow
+}

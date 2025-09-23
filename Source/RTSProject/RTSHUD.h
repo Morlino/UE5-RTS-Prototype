@@ -29,6 +29,12 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommandCardWidget *CommandCardWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UTexture2D *DefaultCursor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UTexture2D *TargetCursor;
+	
 	virtual void DrawHUD() override;
 
 	void StartSelection(const FVector2D& StartPos);
@@ -40,6 +46,8 @@ public:
 
 	void UpdateCommandCard(const TArray<URTSCommandCardData*> &Commands);
 
+	void SetCommandCursor();
+	void SetDefaultCursor();
 protected :
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

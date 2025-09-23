@@ -41,4 +41,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TArray<URTSCommandCardData*> SubCommands;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsTargeted = false;
 };

@@ -46,6 +46,7 @@ private:
 	FVector2D CurrentMousePos;
 
 	TArray<URTSCommandCardData*> CurrentCommandPage;
+	URTSCommandCardData *PendingCommand = nullptr;
 
 	// Selected units
 	UPROPERTY()

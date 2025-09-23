@@ -164,6 +164,7 @@ void ARTSPlayerController::OnLMouseDown()
     GetMousePosition(InitialMousePos.X, InitialMousePos.Y);
     if (RTSHUD)
     {
+        RTSHUD->SetDefaultCursor();
         RTSHUD->StartSelection(InitialMousePos);
     }
 }
@@ -228,20 +229,22 @@ void ARTSPlayerController::OnRMouseDown()
 
 void ARTSPlayerController::OnCommandCard(FKey Key)
 {
-    if (SelectedUnits.IsEmpty()) return;
+    if (SelectedUnits.IsEmpty())
+        return;
 
     UE_LOG(LogTemp, Warning, TEXT("Pressing %s"), *Key.ToString());
 
     TArray<URTSCommandCardData *> &SearchArray =
         CurrentCommandPage.Num() > 0 ? CurrentCommandPage : SelectedUnits[0]->CommandCardData;
 
-    // Find Card by Input Key
     URTSCommandCardData **CmdPtr = Algo::FindByPredicate(
         SearchArray,
-        [Key](URTSCommandCardData *Card) { return Card && Card->Hotkey == Key; });
+        [Key](URTSCommandCardData *Card)
+        { return Card && Card->Hotkey == Key; });
 
-    if (!CmdPtr) return;
-    URTSCommandCardData *Cmd = *CmdPtr; // Dereference
+    if (!CmdPtr)
+        return;
+    URTSCommandCardData *Cmd = *CmdPtr;
 
     if (Cmd->SubCommands.Num() > 0)
     {
@@ -249,17 +252,19 @@ void ARTSPlayerController::OnCommandCard(FKey Key)
         CurrentCommandPage = Cmd->SubCommands;
         RTSHUD->UpdateCommandCard(CurrentCommandPage);
     }
+    else if (Cmd->bIsTargeted) // new check for targeted commands
+    {
+        PendingCommand = Cmd;            // wait for player to click a location/target
+        RTSHUD->SetCommandCursor();
+        CurrentCommandPage.Empty();
+    }
     else
     {
-        // Forward to units; each unit decides what to do
-        UE_LOG(LogTemp, Warning, TEXT("Execute command"));
+        UE_LOG(LogTemp, Warning, TEXT("Execute command immediately"));
         for (ARTSUnit *Unit : SelectedUnits)
-        {
             if (Unit)
-            {
                 Unit->ExecuteCommand(Cmd);
-            }
-        }
+
         CurrentCommandPage.Empty();
     }
 }
