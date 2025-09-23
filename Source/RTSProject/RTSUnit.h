@@ -33,7 +33,7 @@ public:
 	int32 TeamID;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Command")
-	TArray<EUnitAction> SupportedActions;
+	TArray<ECommandType> SupportedActions;
 
 	TArray<FCommandData> CommandCard;
 
@@ -42,7 +42,7 @@ public:
 
 	// Public interface for unit behavior
 	void SetSelected(bool bSelected);
-	void MoveTo(const FVector &TargetLocation);
+	void Move(const FVector &TargetLocation);
 	void Follow(const ARTSUnit *TargetUnit);
 	void StartAttack(ARTSUnit *TargetUnit);
 	void Attack(ARTSUnit *TargetUnit);

@@ -3,7 +3,7 @@
 
 #include "RTSCommandCardData.h"
 
-const FCommandData *URTSCommandCardData::GetCommand(EUnitAction Action) const
+const FCommandData *URTSCommandCardData::GetCommand(ECommandType Action) const
 {
     return Commands.Find(Action);
 }

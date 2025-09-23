@@ -60,9 +60,9 @@ ARTSUnit::ARTSUnit()
 		HealthBarWidget->SetWidgetClass(HealthBarBPClass.Class);
 	}
 
-	SupportedActions = {EUnitAction::Move,
-						EUnitAction::Stop,
-						EUnitAction::Attack};
+	SupportedActions = {ECommandType::Move,
+						ECommandType::Stop,
+						ECommandType::Attack};
 }
 
 // Called every frame
@@ -96,7 +96,7 @@ void ARTSUnit::SetSelected(bool bSelected)
 	SelectionDecal->SetHiddenInGame(!bSelected);
 }
 
-void ARTSUnit::MoveTo(const FVector &TargetLocation)
+void ARTSUnit::Move(const FVector &TargetLocation)
 {
 	MoveTarget = TargetLocation;
 	CurrentState = EUnitState::Moving;
@@ -162,7 +162,7 @@ void ARTSUnit::BeginPlay()
 
 	UE_LOG(LogTemp, Warning, TEXT("Populating CommandCard for unit. SupportedActions.Num = %d"), SupportedActions.Num());
 
-	for (EUnitAction Action : SupportedActions)
+	for (ECommandType Action : SupportedActions)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Processing action: %d"), (uint8)Action);
 

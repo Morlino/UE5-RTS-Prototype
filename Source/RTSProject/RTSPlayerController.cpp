@@ -188,19 +188,19 @@ void ARTSPlayerController::OnRMouseDown()
             if (HitUnit->TeamID != LocalPS->TeamID)
             {
                 // Attack enemy
-                ServerIssueCommand(SelectedUnits, EUnitCommand::Attack, FVector::ZeroVector, HitUnit);
+                ServerIssueCommand(SelectedUnits, ECommandType::Attack, FVector::ZeroVector, HitUnit);
             }
             else
             {
                 // Follow ally
-                ServerIssueCommand(SelectedUnits, EUnitCommand::Follow, FVector::ZeroVector, HitUnit);
+                ServerIssueCommand(SelectedUnits, ECommandType::Move, FVector::ZeroVector, HitUnit);
             }
         }
     }
     else
     {
         // Move to ground
-        ServerIssueCommand(SelectedUnits, EUnitCommand::Move, HitResult.Location, nullptr);
+        ServerIssueCommand(SelectedUnits, ECommandType::Move, HitResult.Location, nullptr);
     }
 }
 
@@ -303,14 +303,14 @@ void ARTSPlayerController::ClearSelection()
     SelectedUnits.Empty();
 }
 
-void ARTSPlayerController::ServerIssueCommand_Implementation(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation, ARTSUnit *TargetUnit)
+void ARTSPlayerController::ServerIssueCommand_Implementation(const TArray<ARTSUnit *> &Units, ECommandType Command, const FVector &TargetLocation, ARTSUnit *TargetUnit)
 {
     if (Units.Num() == 0)
         return;
 
     // Only compute formation offsets for Move commands
     TArray<FVector> MoveDestinations;
-    if (Command == EUnitCommand::Move)
+    if (Command == ECommandType::Move)
     {
         MoveDestinations = ComputeUnitDestinations(TargetLocation, Units.Num(), 100.f); // 100.f spacing
     }
@@ -323,23 +323,24 @@ void ARTSPlayerController::ServerIssueCommand_Implementation(const TArray<ARTSUn
 
         switch (Command)
         {
-        case EUnitCommand::Move:
-            // Each unit gets its own offset destination
-            Unit->MoveTo(MoveDestinations[i]);
-            break;
+            case ECommandType::Move:
+                if (TargetUnit) // Move command with a unit target
+                {
+                    if (TargetUnit->TeamID != Unit->TeamID)
+                        Unit->StartAttack(TargetUnit); // enemy
+                    else
+                        Unit->Follow(TargetUnit); // ally
+                }
+                else // Move command with a location
+                {
+                    Unit->Move(MoveDestinations[i]);
+                }
+                break;
 
-        case EUnitCommand::Attack:
-            if (TargetUnit)
-                Unit->StartAttack(TargetUnit);
-            break;
-
-        case EUnitCommand::Follow:
-            if (TargetUnit)
-                Unit->Follow(TargetUnit);
-            break;
-
-        default:
-            break;
+            case ECommandType::Attack:
+                if (TargetUnit)
+                    Unit->StartAttack(TargetUnit);
+                break;
         }
     }
 }

@@ -3,15 +3,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "RTSUnit.h"
+#include "RTSCommandCardData.h"
 #include "RTSPlayerController.generated.h"
-
-UENUM(BlueprintType)
-enum class EUnitCommand : uint8
-{
-	Move UMETA(DisplayName = "Move"),
-	Attack UMETA(DisplayName = "Attack"),
-	Follow UMETA(DisplayName = "Follow")
-};
 
 UCLASS()
 class RTSPROJECT_API ARTSPlayerController : public APlayerController
@@ -88,8 +81,7 @@ private:
 	// --------------------------
 	// Unit commands
 	// --------------------------
-	void IssueCommandToUnits(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation = FVector::ZeroVector, ARTSUnit *TargetUnit = nullptr);
 	UFUNCTION(Server, Reliable)
-	void ServerIssueCommand(const TArray<ARTSUnit *> &Units, EUnitCommand Command, const FVector &TargetLocation = FVector::ZeroVector, ARTSUnit *TargetUnit = nullptr);
+	void ServerIssueCommand(const TArray<ARTSUnit *> &Units, ECommandType Command, const FVector &TargetLocation = FVector::ZeroVector, ARTSUnit *TargetUnit = nullptr);
 	TArray<FVector> ComputeUnitDestinations(const FVector &Center, int32 NumUnits, float Spacing);
 };

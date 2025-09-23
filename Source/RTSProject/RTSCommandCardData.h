@@ -7,14 +7,14 @@
 #include "RTSCommandCardData.generated.h"
 
 UENUM(BlueprintType)
-enum class EUnitAction : uint8
+enum class ECommandType : uint8
 {
-	Move,
-	Stop,
-	Hold,
-	Patrol,
-	Attack,
-	Build
+	Move	UMETA(DisplayName = "Move"),
+	Stop	UMETA(DisplayName = "Stop"),
+	Hold	UMETA(DisplayName = "Hold"),
+	Patrol	UMETA(DisplayName = "Patrol"),
+	Attack	UMETA(DisplayName = "Attack"),
+	Build 	UMETA(DisplayName = "Build")
 };
 
 USTRUCT(BlueprintType)
@@ -42,7 +42,7 @@ class RTSPROJECT_API URTSCommandCardData : public UDataAsset
 	
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "RTS")
-	TMap<EUnitAction, FCommandData> Commands;
+	TMap<ECommandType, FCommandData> Commands;
 
-	const FCommandData *GetCommand(EUnitAction Action) const;
+	const FCommandData *GetCommand(ECommandType Action) const;
 };
