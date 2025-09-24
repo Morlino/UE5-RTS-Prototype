@@ -51,6 +51,7 @@ private:
 	// Selected units
 	UPROPERTY()
 	TArray<ARTSUnit *> SelectedUnits;
+	bool bIsPlacingBuilding = false;
 
 	// --------------------------
 	// Camera control functions

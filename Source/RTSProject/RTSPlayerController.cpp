@@ -33,9 +33,14 @@ void ARTSPlayerController::Tick(float DeltaTime)
             RTSHUD->UpdateSelection(CurrentMousePos);
         }
     }
+
+    FHitResult Hit;
+    GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+    if (bIsPlacingBuilding && Hit.bBlockingHit)
+    {
+        RTSHUD->UpdateBuildingGhostLocation(Hit.Location);
+    }
 }
-
-
 
 bool ARTSPlayerController::IsLMouseHolding() const
 {
@@ -167,6 +172,21 @@ void ARTSPlayerController::OnLMouseDown()
         RTSHUD->SetDefaultCursor();
         RTSHUD->StartSelection(InitialMousePos);
     }
+    if (bIsPlacingBuilding && PendingCommand)
+    {
+        FHitResult Hit;
+        GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+        if (Hit.bBlockingHit)
+        {
+            for (ARTSUnit *Unit : SelectedUnits)
+                UE_LOG(LogTemp, Warning, TEXT("ExecuteCommandAtLocation()"));
+                // Unit->ExecuteCommandAtLocation(PendingCommand, Hit.Location);
+
+            RTSHUD->ClearBuildingPlacementCursor();
+            PendingCommand = nullptr;
+            bIsPlacingBuilding = false;
+        }
+    }
 }
 
 void ARTSPlayerController::OnLMouseUp()
@@ -251,6 +271,13 @@ void ARTSPlayerController::OnCommandCard(FKey Key)
         UE_LOG(LogTemp, Warning, TEXT("Switched to Submenu"));
         CurrentCommandPage = Cmd->SubCommands;
         RTSHUD->UpdateCommandCard(CurrentCommandPage);
+    }
+    else if (Cmd->bIsBuilding) // new property on command
+    {
+        PendingCommand = Cmd;
+        RTSHUD->SetBuildingPlacementCursor(Cmd->PreviewMesh); // show ghost mesh
+        bIsPlacingBuilding = true;
+        return;
     }
     else if (Cmd->bIsTargeted) // new check for targeted commands
     {

@@ -45,6 +45,9 @@ public:
 	void UpdateResourceDisplay(int32 Metal, int32 Fuel, int32 CurrentSupply, int32 MaxSupply);
 
 	void UpdateCommandCard(const TArray<URTSCommandCardData*> &Commands);
+	void SetBuildingPlacementCursor(UStaticMesh *PreviewMesh);
+	void UpdateBuildingGhostLocation(const FVector &Location);
+	void ClearBuildingPlacementCursor();
 
 	void SetCommandCursor();
 	void SetDefaultCursor();

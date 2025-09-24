@@ -96,6 +96,21 @@ void ARTSHUD::UpdateCommandCard(const TArray<URTSCommandCardData *> &Commands)
     }
 }
 
+void ARTSHUD::SetBuildingPlacementCursor(UStaticMesh *PreviewMesh)
+{
+    UE_LOG(LogTemp, Warning, TEXT("SetBuildingPlacementCursor"));
+}
+
+void ARTSHUD::UpdateBuildingGhostLocation(const FVector &Location)
+{
+    UE_LOG(LogTemp, Warning, TEXT("UpdateBuildingGhostLocation"));
+}
+
+void ARTSHUD::ClearBuildingPlacementCursor()
+{
+    UE_LOG(LogTemp, Warning, TEXT("ClearBuildingPlacementCursor"));
+}
+
 void ARTSHUD::SetCommandCursor()
 {
     APlayerController *PC = GetOwningPlayerController();

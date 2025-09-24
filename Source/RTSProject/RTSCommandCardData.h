@@ -43,5 +43,16 @@ public:
 	TArray<URTSCommandCardData*> SubCommands;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsTargeted = false;
+	bool bIsTargeted;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsBuilding;
+
+	/** Actor to actually spawn/construct */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "bIsBuilding"))
+	TSubclassOf<AActor> BuildingClass;
+
+	/** Ghost mesh for placement preview */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "bIsBuilding"))
+	UStaticMesh *PreviewMesh;
 };
