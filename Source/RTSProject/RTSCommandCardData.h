@@ -46,6 +46,12 @@ public:
 	bool bIsTargeted;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsActorTargeted;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsLocationTargeted;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsBuilding;
 
 	/** Actor to actually spawn/construct */

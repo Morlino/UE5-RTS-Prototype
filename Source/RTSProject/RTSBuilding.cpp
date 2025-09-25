@@ -15,6 +15,8 @@ ARTSBuilding::ARTSBuilding()
 	bReplicates = true;
 	SetReplicateMovement(true);
 
+	Tags.Add(FName("Building"));
+
 	// Root collision used for navigation
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
 	RootComponent = CollisionComponent;

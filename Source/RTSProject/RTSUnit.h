@@ -14,7 +14,8 @@ enum class EUnitState : uint8
 	Idle 		UMETA(DisplayName = "Idle"),
 	Moving 		UMETA(DisplayName = "Moving"),
 	Attacking 	UMETA(DisplayName = "Attacking"),
-	Following 	UMETA(DisplayName = "Following")
+	Following 	UMETA(DisplayName = "Following"),
+	Building	UMETA(DisplayName = "Building")
 };
 
 UCLASS()
@@ -43,6 +44,7 @@ public:
 	void StartAttack(ARTSUnit *TargetUnit);
 	void Attack(ARTSUnit *TargetUnit);
 	void StopAttack();
+	bool IsBusy();
 
 	UFUNCTION(Server, Reliable)
 	void ServerExecuteCommand(URTSCommandCardData *Cmd, FVector Location = FVector::ZeroVector, AActor *Target = nullptr);

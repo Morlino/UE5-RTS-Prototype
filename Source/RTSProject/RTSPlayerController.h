@@ -6,6 +6,15 @@
 #include "RTSCommandCardData.h"
 #include "RTSPlayerController.generated.h"
 
+UENUM(BlueprintType)
+enum class EPlayerControllerState : uint8
+{
+	Idle UMETA(DisplayName = "Idle"),
+	Selecting UMETA(DisplayName = "Selecting"),
+	IssuingCommand UMETA(DisplayName = "Issuing Command"),
+	PlacingStructure UMETA(DisplayName = "Placing Structure"),
+};
+
 UCLASS()
 class RTSPROJECT_API ARTSPlayerController : public APlayerController
 {
@@ -14,6 +23,9 @@ class RTSPROJECT_API ARTSPlayerController : public APlayerController
 public:
 	// Constructor (if needed)
 	ARTSPlayerController();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EPlayerControllerState CurrentControllerState;
 
 	class ARTSHUD *RTSHUD;
 
@@ -52,6 +64,8 @@ private:
 	// Selected units
 	UPROPERTY()
 	TArray<ARTSUnit *> SelectedUnits;
+	ARTSUnit *CurrentSelectedUnit;
+
 	bool bIsPlacingBuilding = false;
 
 	// --------------------------
@@ -82,8 +96,17 @@ private:
 	// --------------------------
 	// Unit selection helpers
 	// --------------------------
-	void UpdateUnitSelection();
+	bool UpdateUnitSelection();
+	void UpdateCurrentUnit();
 	bool IsUnitOverlappingSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max) const;
+	void BeginSelection();
+	void EndSelection();
+	void UpdateDisplayedCommandCard();
+	AActor *GetActorUnderCursor();
+	FVector GetLocationUnderCursor();
+	FVector GetSnappedCursorLocation();
+	void IssueCurrentUnitToBuild(FVector BuildLocation);
+	void AllSelectedUnitsIssueCommand(URTSCommandCardData *Cmd, FVector Location = FVector::ZeroVector, AActor *Target = nullptr);
 
 	void AddUnitToSelection(ARTSUnit *Unit);
 	void RemoveUnitFromSelection(ARTSUnit *Unit);

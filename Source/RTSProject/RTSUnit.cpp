@@ -21,6 +21,8 @@ ARTSUnit::ARTSUnit()
 	bReplicates = true;			// replicate this actor to clients
 	SetReplicateMovement(true); // replicate its movement automatically
 
+	Tags.Add(FName("Unit"));
+
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleRoot"));
 	RootComponent = CapsuleComponent;
 	CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -137,6 +139,14 @@ void ARTSUnit::Attack(ARTSUnit *TargetUnit)
 void ARTSUnit::StopAttack()
 {
 	CurrentTarget = nullptr;
+}
+
+bool ARTSUnit::IsBusy()
+{
+	if (CurrentState == EUnitState::Building)
+		return true;
+	else
+		return false;
 }
 
 void ARTSUnit::ServerExecuteCommand_Implementation(URTSCommandCardData *Cmd, FVector Location, AActor *Target)
