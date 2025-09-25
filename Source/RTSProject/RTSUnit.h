@@ -44,8 +44,11 @@ public:
 	void Attack(ARTSUnit *TargetUnit);
 	void StopAttack();
 
-	void ExecuteCommand(URTSCommandCardData *Cmd);
-	virtual void DoUniqueCommand(URTSCommandCardData *Cmd);
+	UFUNCTION(Server, Reliable)
+	void ServerExecuteCommand(URTSCommandCardData *Cmd, FVector Location = FVector::ZeroVector, AActor *Target = nullptr);
+
+	UFUNCTION(Server, Reliable)
+	virtual void ServerDoUniqueCommand(URTSCommandCardData *Cmd, FVector Location = FVector::ZeroVector, AActor *Target = nullptr);
 
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_Health, EditAnywhere, BlueprintReadWrite, Category = "Stats")
@@ -79,6 +82,9 @@ protected:
 	float TimeSinceLastAttack = 0.0f;
 	bool bIsMovingToTarget = false;
 
+	// AI
+	class AAIController *AIController;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -103,9 +109,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "UI")
 	class UWidgetComponent *HealthBarWidget;
-
-	// AI
-	class AAIController *AIController;
 
 	UFUNCTION()
 	void OnRep_Health();

@@ -59,4 +59,6 @@ private:
 	bool bIsSelecting = false;
 	FVector2D SelectionStart;
 	FVector2D SelectionEnd;
+
+	class AStaticMeshActor *BuildingGhostMesh;
 };

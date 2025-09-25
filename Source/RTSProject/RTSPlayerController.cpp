@@ -38,7 +38,10 @@ void ARTSPlayerController::Tick(float DeltaTime)
     GetHitResultUnderCursor(ECC_Visibility, false, Hit);
     if (bIsPlacingBuilding && Hit.bBlockingHit)
     {
-        RTSHUD->UpdateBuildingGhostLocation(Hit.Location);
+        FVector SnappedLocation = Hit.Location;
+        SnappedLocation.X = FMath::GridSnap(SnappedLocation.X, GridSize);
+        SnappedLocation.Y = FMath::GridSnap(SnappedLocation.Y, GridSize);
+        RTSHUD->UpdateBuildingGhostLocation(SnappedLocation);
     }
 }
 
@@ -99,6 +102,8 @@ void ARTSPlayerController::SetupInputComponent()
     InputComponent->BindAction("CommandCardX", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
     InputComponent->BindAction("CommandCardC", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
     InputComponent->BindAction("CommandCardV", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
+
+    // Always Cancel
     InputComponent->BindAction("CommandCardB", IE_Pressed, this, &ARTSPlayerController::OnCommandCard);
 }
 
@@ -178,9 +183,16 @@ void ARTSPlayerController::OnLMouseDown()
         GetHitResultUnderCursor(ECC_Visibility, false, Hit);
         if (Hit.bBlockingHit)
         {
+            DrawDebugSphere(GetWorld(), Hit.Location, 50.0f, 12, FColor::Red, false, 0.05f, 0, 2.0f);
+
             for (ARTSUnit *Unit : SelectedUnits)
+            {
                 UE_LOG(LogTemp, Warning, TEXT("ExecuteCommandAtLocation()"));
-                // Unit->ExecuteCommandAtLocation(PendingCommand, Hit.Location);
+                FVector SnappedLocation = Hit.Location;
+                SnappedLocation.X = FMath::GridSnap(SnappedLocation.X, GridSize);
+                SnappedLocation.Y = FMath::GridSnap(SnappedLocation.Y, GridSize);
+                ServerRequestUnitCommand(Unit, PendingCommand, Hit.Location);
+            }
 
             RTSHUD->ClearBuildingPlacementCursor();
             PendingCommand = nullptr;
@@ -249,6 +261,13 @@ void ARTSPlayerController::OnRMouseDown()
 
 void ARTSPlayerController::OnCommandCard(FKey Key)
 {
+    // Always cancel current action
+    if (Key == EKeys::B)
+    {
+        CancelCurrentAction();
+        return;
+    }
+
     if (SelectedUnits.IsEmpty())
         return;
 
@@ -290,10 +309,31 @@ void ARTSPlayerController::OnCommandCard(FKey Key)
         UE_LOG(LogTemp, Warning, TEXT("Execute command immediately"));
         for (ARTSUnit *Unit : SelectedUnits)
             if (Unit)
-                Unit->ExecuteCommand(Cmd);
+                ServerRequestUnitCommand(Unit, Cmd);
 
         CurrentCommandPage.Empty();
     }
+}
+
+void ARTSPlayerController::CancelCurrentAction()
+{
+    if (bIsPlacingBuilding)
+    {
+        RTSHUD->ClearBuildingPlacementCursor();
+        PendingCommand = nullptr;
+        bIsPlacingBuilding = false;
+    }
+
+    // Reset command card display
+    CurrentCommandPage.Empty();
+
+    if (!SelectedUnits.IsEmpty())
+    {
+        // Show the default command page of the first selected unit
+        RTSHUD->UpdateCommandCard(SelectedUnits[0]->CommandCardData);
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("Cancelled action"));
 }
 
 void ARTSPlayerController::UpdateUnitSelection()
@@ -434,6 +474,14 @@ void ARTSPlayerController::ServerIssueCommand_Implementation(const TArray<ARTSUn
                     Unit->StartAttack(TargetUnit);
                 break;
         }
+    }
+}
+
+void ARTSPlayerController::ServerRequestUnitCommand_Implementation(ARTSUnit *Unit, URTSCommandCardData *Cmd, FVector Location, AActor *Target)
+{
+    if (Unit)
+    {
+        Unit->ServerExecuteCommand(Cmd, Location, Target);
     }
 }
 

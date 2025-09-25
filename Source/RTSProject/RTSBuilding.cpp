@@ -11,13 +11,17 @@ ARTSBuilding::ARTSBuilding()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	// Server Replicate
+	bReplicates = true;
+	SetReplicateMovement(true);
+
 	// Root collision used for navigation
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
 	RootComponent = CollisionComponent;
 	CollisionComponent->SetBoxExtent(FVector(200.f, 200.f, 300.f));
 	CollisionComponent->SetCollisionProfileName(TEXT("BlockAll"));
 	CollisionComponent->SetCanEverAffectNavigation(true);
-	CollisionComponent->SetMobility(EComponentMobility::Static); // important for navmesh
+	CollisionComponent->SetMobility(EComponentMobility::Movable); // important for navmesh
 
 	// Visual mesh
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));

@@ -139,7 +139,7 @@ void ARTSUnit::StopAttack()
 	CurrentTarget = nullptr;
 }
 
-void ARTSUnit::ExecuteCommand(URTSCommandCardData *Cmd)
+void ARTSUnit::ServerExecuteCommand_Implementation(URTSCommandCardData *Cmd, FVector Location, AActor *Target)
 {
 	if (!Cmd)
 		return;
@@ -166,11 +166,11 @@ void ARTSUnit::ExecuteCommand(URTSCommandCardData *Cmd)
 	}
 	else
 	{
-		DoUniqueCommand(Cmd);
+		ServerDoUniqueCommand(Cmd, Location, Target);
 	}
 }
 
-void ARTSUnit::DoUniqueCommand(URTSCommandCardData *Cmd)
+void ARTSUnit::ServerDoUniqueCommand_Implementation(URTSCommandCardData *Cmd, FVector Location, AActor *Target)
 {
 	UE_LOG(LogTemp, Warning, TEXT("This guy can't"));
 }
@@ -180,7 +180,15 @@ void ARTSUnit::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AIController = Cast<AAIController>(GetController());
+	if (!AIController)
+	{
+		AIController = GetWorld()->SpawnActor<AAIController>(AAIController::StaticClass());
+		if (AIController)
+		{
+			AIController->Possess(this);
+			UE_LOG(LogTemp, Log, TEXT("AIController spawned and possessed unit %s"), *GetName());
+		}
+	}
 
 	UpdateHealthBar();
 }

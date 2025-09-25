@@ -5,6 +5,7 @@
 #include "Engine/Canvas.h"
 #include "ResourceWidget.h"
 #include "RTSPlayerState.h"
+#include "Engine/StaticMeshActor.h"
 
 void ARTSHUD::BeginPlay()
 {
@@ -99,16 +100,28 @@ void ARTSHUD::UpdateCommandCard(const TArray<URTSCommandCardData *> &Commands)
 void ARTSHUD::SetBuildingPlacementCursor(UStaticMesh *PreviewMesh)
 {
     UE_LOG(LogTemp, Warning, TEXT("SetBuildingPlacementCursor"));
+    BuildingGhostMesh = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass());
+    BuildingGhostMesh->SetMobility(EComponentMobility::Movable);
+    BuildingGhostMesh->SetActorLocation(FVector(0.0f, 0.0f, 0.0f));
+    if (BuildingGhostMesh)
+    {
+        BuildingGhostMesh->GetStaticMeshComponent()->SetStaticMesh(PreviewMesh);
+    }
 }
 
 void ARTSHUD::UpdateBuildingGhostLocation(const FVector &Location)
 {
-    UE_LOG(LogTemp, Warning, TEXT("UpdateBuildingGhostLocation"));
+    UE_LOG(LogTemp, Warning, TEXT("UpdateBuildingGhostLocation %f %f %f"), Location.X, Location.Y, Location.Z);
+    BuildingGhostMesh->SetActorLocation(Location);
 }
 
 void ARTSHUD::ClearBuildingPlacementCursor()
 {
     UE_LOG(LogTemp, Warning, TEXT("ClearBuildingPlacementCursor"));
+    if (BuildingGhostMesh && BuildingGhostMesh->IsValidLowLevel())
+    {
+        BuildingGhostMesh->Destroy();
+    }
 }
 
 void ARTSHUD::SetCommandCursor()

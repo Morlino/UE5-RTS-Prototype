@@ -14,8 +14,19 @@ class RTSPROJECT_API ARTSWorker : public ARTSUnit
 {
 	GENERATED_BODY()
 
-public:
-	ARTSWorker();
+private:
+	UPROPERTY(Replicated)
+	bool bIsMovingToBuild = false;
 
-	virtual void DoUniqueCommand(URTSCommandCardData *Cmd) override;
+	UPROPERTY(Replicated)
+	FVector BuildTargetLocation;
+
+	UPROPERTY(Replicated)
+	URTSCommandCardData *CurrentCommand;
+
+public:
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	virtual void ServerDoUniqueCommand(URTSCommandCardData *Cmd, FVector Location = FVector::ZeroVector, AActor *Target = nullptr) override;
 };

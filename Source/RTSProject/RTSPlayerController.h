@@ -44,6 +44,7 @@ private:
 	bool bIsAddingToSelection = false;
 	FVector2D InitialMousePos;
 	FVector2D CurrentMousePos;
+	float GridSize = 200.0f;
 
 	TArray<URTSCommandCardData*> CurrentCommandPage;
 	URTSCommandCardData *PendingCommand = nullptr;
@@ -76,6 +77,7 @@ private:
 	// Command Card control
 	// --------------------------
 	void OnCommandCard(FKey Key);
+	void CancelCurrentAction();
 
 	// --------------------------
 	// Unit selection helpers
@@ -92,5 +94,9 @@ private:
 	// --------------------------
 	UFUNCTION(Server, Reliable)
 	void ServerIssueCommand(const TArray<ARTSUnit *> &Units, ECommandType Command, const FVector &TargetLocation = FVector::ZeroVector, ARTSUnit *TargetUnit = nullptr);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestUnitCommand(ARTSUnit* Unit, URTSCommandCardData* Cmd, FVector Location = FVector::ZeroVector, AActor* Target = nullptr);
+	
 	TArray<FVector> ComputeUnitDestinations(const FVector &Center, int32 NumUnits, float Spacing);
 };
