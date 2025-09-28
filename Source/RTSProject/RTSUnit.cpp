@@ -157,6 +157,17 @@ void ARTSUnit::ServerExecuteCommand_Implementation(URTSCommandCardData *Cmd, FVe
 	if (Cmd->CommandType == ECommandType::Move)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Move"));
+		if (Target)
+		{
+			if (ARTSUnit *FollowTarget = Cast<ARTSUnit>(Target))
+			{
+				Follow(FollowTarget);
+			}
+		}
+		else
+		{
+			Move(Location);
+		}
 	}
 	else if (Cmd->CommandType == ECommandType::Stop)
 	{
@@ -173,6 +184,13 @@ void ARTSUnit::ServerExecuteCommand_Implementation(URTSCommandCardData *Cmd, FVe
 	else if (Cmd->CommandType == ECommandType::Attack)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Attack"));
+		if (Target)
+		{
+			if (ARTSUnit *AttackTarget = Cast<ARTSUnit>(Target))
+			{
+				StartAttack(AttackTarget);
+			}
+		}
 	}
 	else
 	{

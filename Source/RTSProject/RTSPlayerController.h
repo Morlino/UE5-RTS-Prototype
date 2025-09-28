@@ -24,12 +24,31 @@ public:
 	// Constructor (if needed)
 	ARTSPlayerController();
 
+	// Camera Pawn reference
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class ARTSCameraPawn *CameraPawn;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<URTSCommandCardData*> CurrentCommandPage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	URTSCommandCardData *PendingCommand = nullptr;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EPlayerControllerState CurrentControllerState;
 
-	class ARTSHUD *RTSHUD;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class ARTSHUD *Hud;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class ARTSPlayerState *PS;
+
+	// Selected units
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<ARTSUnit *> SelectedUnits;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	ARTSUnit *CurrentSelectedUnit;
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -37,6 +56,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Team")
 
 	bool IsLMouseHolding() const;
+
+	FORCEINLINE ARTSPlayerState* GetRTSPlayerState() const;
 
 protected:
 	// Called when the game starts
@@ -47,26 +68,14 @@ protected:
 
 	virtual void PostInitializeComponents() override;
 
-private:
-	// Camera Pawn reference
-	class ARTSCameraPawn *CameraPawn;
+	virtual void OnRep_PlayerState() override;
 
+private:
 	// Mouse selection state
-	bool bIsLMouseHolding = false;
-	bool bIsAddingToSelection = false;
 	FVector2D InitialMousePos;
 	FVector2D CurrentMousePos;
+	bool bIsAddingToSelection = false;
 	float GridSize = 200.0f;
-
-	TArray<URTSCommandCardData*> CurrentCommandPage;
-	URTSCommandCardData *PendingCommand = nullptr;
-
-	// Selected units
-	UPROPERTY()
-	TArray<ARTSUnit *> SelectedUnits;
-	ARTSUnit *CurrentSelectedUnit;
-
-	bool bIsPlacingBuilding = false;
 
 	// --------------------------
 	// Camera control functions
@@ -87,11 +96,22 @@ private:
 	void OnLMouseUp();
 	void OnRMouseDown();
 
+	void HandleIdleRClick();
+	void HandleTargetClick(AActor* Target);
+	void HandleGroundClick(const FVector& Location);
+
 	// --------------------------
 	// Command Card control
 	// --------------------------
 	void OnCommandCard(FKey Key);
+	void HandleCommandCard(URTSCommandCardData* Cmd);
+	void ClearCommandCard();
 	void CancelCurrentAction();
+	void UpdateDisplayedCommandCard();
+	URTSCommandCardData *GetCommandByType(ECommandType Type, ARTSUnit *Unit);
+	URTSCommandCardData* FindCommandByHotkey(FKey Key) const;
+
+
 
 	// --------------------------
 	// Unit selection helpers
@@ -101,13 +121,10 @@ private:
 	bool IsUnitOverlappingSelectionRect(ARTSUnit *Unit, const FVector2D &Min, const FVector2D &Max) const;
 	void BeginSelection();
 	void EndSelection();
-	void UpdateDisplayedCommandCard();
 	AActor *GetActorUnderCursor();
 	FVector GetLocationUnderCursor();
 	FVector GetSnappedCursorLocation();
-	void IssueCurrentUnitToBuild(FVector BuildLocation);
-	void AllSelectedUnitsIssueCommand(URTSCommandCardData *Cmd, FVector Location = FVector::ZeroVector, AActor *Target = nullptr);
-
+	bool IsTargetableActor(AActor *Target);
 	void AddUnitToSelection(ARTSUnit *Unit);
 	void RemoveUnitFromSelection(ARTSUnit *Unit);
 	void ClearSelection();
@@ -116,10 +133,8 @@ private:
 	// Unit commands
 	// --------------------------
 	UFUNCTION(Server, Reliable)
-	void ServerIssueCommand(const TArray<ARTSUnit *> &Units, ECommandType Command, const FVector &TargetLocation = FVector::ZeroVector, ARTSUnit *TargetUnit = nullptr);
-
-	UFUNCTION(Server, Reliable)
 	void ServerRequestUnitCommand(ARTSUnit* Unit, URTSCommandCardData* Cmd, FVector Location = FVector::ZeroVector, AActor* Target = nullptr);
-	
+	void AllSelectedUnitsIssueCommand(URTSCommandCardData *Cmd, FVector Location = FVector::ZeroVector, AActor *Target = nullptr);
+	void IssueCurrentUnitToBuild(FVector BuildLocation);
 	TArray<FVector> ComputeUnitDestinations(const FVector &Center, int32 NumUnits, float Spacing);
 };

@@ -3,13 +3,10 @@
 
 #include "RTSPlayerController.h"
 #include "RTSCameraPawn.h"
-#include "Blueprint/UserWidget.h"
 #include "RTSHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
-#include "ResourceWidget.h"
-#include "Net/UnrealNetwork.h"
 #include "RTSPlayerState.h"
 
 ARTSPlayerController::ARTSPlayerController()
@@ -25,29 +22,38 @@ void ARTSPlayerController::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (bIsLMouseHolding)
+    switch (CurrentControllerState)
+    {
+    case EPlayerControllerState::Selecting:
     {
         GetMousePosition(CurrentMousePos.X, CurrentMousePos.Y);
-        if (RTSHUD)
+        if (Hud)
         {
-            RTSHUD->UpdateSelection(CurrentMousePos);
+            Hud->UpdateSelection(CurrentMousePos);
+        }
+        break;
+    }
+    case EPlayerControllerState::PlacingStructure:
+    {
+        FHitResult Hit;
+        GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+        if (Hit.bBlockingHit)
+        {
+            FVector SnappedLocation = Hit.Location;
+            SnappedLocation.X = FMath::GridSnap(SnappedLocation.X, GridSize);
+            SnappedLocation.Y = FMath::GridSnap(SnappedLocation.Y, GridSize);
+            Hud->UpdateBuildingGhostLocation(SnappedLocation);
         }
     }
 
-    FHitResult Hit;
-    GetHitResultUnderCursor(ECC_Visibility, false, Hit);
-    if (bIsPlacingBuilding && Hit.bBlockingHit)
-    {
-        FVector SnappedLocation = Hit.Location;
-        SnappedLocation.X = FMath::GridSnap(SnappedLocation.X, GridSize);
-        SnappedLocation.Y = FMath::GridSnap(SnappedLocation.Y, GridSize);
-        RTSHUD->UpdateBuildingGhostLocation(SnappedLocation);
+    default:
+        break;
     }
 }
 
-bool ARTSPlayerController::IsLMouseHolding() const
+ARTSPlayerState* ARTSPlayerController::GetRTSPlayerState() const
 {
-    return bIsLMouseHolding;
+    return PS;
 }
 
 void ARTSPlayerController::BeginPlay()
@@ -64,7 +70,7 @@ void ARTSPlayerController::BeginPlay()
     PS = GetPlayerState<ARTSPlayerState>();
     
     // Set HUD
-    RTSHUD = Cast<ARTSHUD>(GetHUD());
+    Hud = Cast<ARTSHUD>(GetHUD());
 }
 
 void ARTSPlayerController::SetupInputComponent()
@@ -110,6 +116,20 @@ void ARTSPlayerController::SetupInputComponent()
 void ARTSPlayerController::PostInitializeComponents()
 {
     Super::PostInitializeComponents();
+}
+
+void ARTSPlayerController::OnRep_PlayerState()
+{
+    Super::OnRep_PlayerState();
+
+    // Update our cached pointer when replication delivers PlayerState
+    PS = Cast<ARTSPlayerState>(PlayerState);
+
+    // (Optional) You can fire off some init code here if you need
+    if (PS)
+    {
+        UE_LOG(LogTemp, Log, TEXT("PlayerState replicated, TeamID: %d"), PS->TeamID);
+    }
 }
 
 void ARTSPlayerController::CameraMoveForward(float Value)
@@ -225,8 +245,13 @@ void ARTSPlayerController::OnLMouseUp()
     bool bSelectionChanged = UpdateUnitSelection();
     if (bSelectionChanged)
     {
+        UE_LOG(LogTemp, Warning, TEXT("Display New Selection"));
         UpdateCurrentUnit();
         UpdateDisplayedCommandCard();
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Display Same Selection"));
     }
 }
 
@@ -237,52 +262,8 @@ void ARTSPlayerController::OnRMouseDown()
     switch (CurrentControllerState)
     {
     case EPlayerControllerState::Idle:
-    {
-        // Think about this later
-        UE_LOG(LogTemp, Warning, TEXT("Idle So moving"));
-        AActor *Target = GetActorUnderCursor();
-        if (Target->ActorHasTag("Unit") || Target->ActorHasTag("Resource"))
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Hit some Target"));
-        }
-        else
-        {
-            // No Target, just Move
-            FVector Location = GetLocationUnderCursor();
-            UE_LOG(LogTemp, Warning, TEXT("Moving to %s"), *Location.ToString());
-            ServerIssueCommand(SelectedUnits, ECommandType::Move, Location, nullptr);
-        }
-
-        // FHitResult HitResult;
-        // if (!GetHitResultUnderCursor(ECC_Visibility, true, HitResult))
-        // return;
-        
-        // DrawDebugSphere(GetWorld(), HitResult.Location, 50.0f, 12, FColor::Green, false, 0.05f, 0, 2.0f);
-        
-        // ARTSUnit *HitUnit = Cast<ARTSUnit>(HitResult.GetActor());
-        // if (HitUnit)
-        // {
-        //     ARTSPlayerState *LocalPS = GetPlayerState<ARTSPlayerState>();
-        //     if (LocalPS)
-        //     {
-        //         if (HitUnit->TeamID != LocalPS->TeamID)
-        //         {
-        //             // Attack enemy
-        //             ServerIssueCommand(SelectedUnits, ECommandType::Attack, FVector::ZeroVector, HitUnit);
-        //         }
-        //         else
-        //         {
-        //             // Follow ally
-        //             ServerIssueCommand(SelectedUnits, ECommandType::Move, FVector::ZeroVector, HitUnit);
-        //         }
-        //     }
-        // }
-        // else
-        // {
-        //     // Move to ground
-        //     ServerIssueCommand(SelectedUnits, ECommandType::Move, HitResult.Location, nullptr);
-        // }
-    }
+        HandleIdleRClick();
+        break;
 
     default:
         break;
@@ -291,7 +272,6 @@ void ARTSPlayerController::OnRMouseDown()
 
 void ARTSPlayerController::OnCommandCard(FKey Key)
 {
-    // Always cancel current action
     if (Key == EKeys::B)
     {
         CancelCurrentAction();
@@ -301,67 +281,72 @@ void ARTSPlayerController::OnCommandCard(FKey Key)
     if (SelectedUnits.IsEmpty())
         return;
 
-    UE_LOG(LogTemp, Warning, TEXT("Pressing %s"), *Key.ToString());
-
-    TArray<URTSCommandCardData *> &SearchArray =
-        CurrentCommandPage.Num() > 0 ? CurrentCommandPage : CurrentSelectedUnit->CommandCardData;
-
-    URTSCommandCardData **CmdPtr = Algo::FindByPredicate(
-        SearchArray,
-        [Key](URTSCommandCardData *Card)
-        { return Card && Card->Hotkey == Key; });
-
-    if (!CmdPtr)
+    URTSCommandCardData* Cmd = FindCommandByHotkey(Key);
+    if (!Cmd)
         return;
-    URTSCommandCardData *Cmd = *CmdPtr;
+
+    HandleCommandCard(Cmd);
+}
+
+void ARTSPlayerController::HandleCommandCard(URTSCommandCardData* Cmd)
+{
+    if (!Cmd) return;
 
     if (Cmd->SubCommands.Num() > 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Switched to Submenu"));
         CurrentCommandPage = Cmd->SubCommands;
-        RTSHUD->UpdateCommandCard(CurrentCommandPage);
-    }
-    else if (Cmd->bIsBuilding) // new property on command
-    {
-        PendingCommand = Cmd;
-        RTSHUD->SetBuildingPlacementCursor(Cmd->PreviewMesh); // show ghost mesh
-        bIsPlacingBuilding = true;
+        Hud->UpdateCommandCard(CurrentCommandPage);
         return;
     }
-    else if (Cmd->bIsActorTargeted || Cmd->bIsLocationTargeted) // new check for targeted commands
-    {
-        PendingCommand = Cmd;            // wait for player to click a location/target
-        RTSHUD->SetCommandCursor();
-        CurrentCommandPage.Empty();
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Execute command immediately"));
-        for (ARTSUnit *Unit : SelectedUnits)
-            if (Unit)
-                ServerRequestUnitCommand(Unit, Cmd);
 
+    if (Cmd->bIsBuilding)
+    {
+        PendingCommand = Cmd;
+        Hud->SetBuildingPlacementCursor(Cmd->PreviewMesh);
+        ClearCommandCard();
+        CurrentControllerState = EPlayerControllerState::PlacingStructure;
+        return;
+    }
+
+    if (Cmd->bIsActorTargeted || Cmd->bIsLocationTargeted)
+    {
+        PendingCommand = Cmd;
+        Hud->SetCommandCursor();
+        ClearCommandCard();
+        return;
+    }
+
+    // Execute immediately
+    AllSelectedUnitsIssueCommand(Cmd);
+    ClearCommandCard();
+}
+
+void ARTSPlayerController::ClearCommandCard()
+{
+    if (SelectedUnits.IsEmpty())
+    {
+        // Reset command card display
         CurrentCommandPage.Empty();
+        Hud->UpdateCommandCard(CurrentCommandPage);
+    }
+    else if (!SelectedUnits.IsEmpty())
+    {
+        // Show the default command page of the first selected unit
+        CurrentCommandPage = CurrentSelectedUnit->CommandCardData;
+        Hud->UpdateCommandCard(CurrentCommandPage);
     }
 }
 
 void ARTSPlayerController::CancelCurrentAction()
 {
-    if (bIsPlacingBuilding)
+    if (CurrentControllerState == EPlayerControllerState::PlacingStructure)
     {
-        RTSHUD->ClearBuildingPlacementCursor();
+        Hud->ClearBuildingPlacementCursor();
         PendingCommand = nullptr;
-        bIsPlacingBuilding = false;
+        CurrentControllerState = EPlayerControllerState::Idle;
     }
 
-    // Reset command card display
-    CurrentCommandPage.Empty();
-
-    if (!SelectedUnits.IsEmpty())
-    {
-        // Show the default command page of the first selected unit
-        RTSHUD->UpdateCommandCard(CurrentSelectedUnit->CommandCardData);
-    }
+    ClearCommandCard();
 
     UE_LOG(LogTemp, Warning, TEXT("Cancelled action"));
 }
@@ -387,6 +372,14 @@ bool ARTSPlayerController::UpdateUnitSelection()
                 NewSelection.Add(Unit);
             }
         }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("NewSelection.Num(): %d"), NewSelection.Num());
+
+    // If nothing is selected, don't treat it as a selection change
+    if (NewSelection.Num() == 0)
+    {
+        return false; // Keep current selection
     }
 
     // Check if selection actually changed
@@ -471,28 +464,26 @@ bool ARTSPlayerController::IsUnitOverlappingSelectionRect(ARTSUnit *Unit, const 
 void ARTSPlayerController::BeginSelection()
 {
     CurrentControllerState = EPlayerControllerState::Selecting;
-    bIsLMouseHolding = true;
     GetMousePosition(InitialMousePos.X, InitialMousePos.Y);
-    if (RTSHUD)
+    if (Hud)
     {
-        RTSHUD->SetDefaultCursor();
-        RTSHUD->StartSelection(InitialMousePos);
+        Hud->SetDefaultCursor();
+        Hud->StartSelection(InitialMousePos);
     }
 }
 
 void ARTSPlayerController::EndSelection()
 {
     CurrentControllerState = EPlayerControllerState::Idle;
-    bIsLMouseHolding = false;
-    if (RTSHUD)
-        RTSHUD->EndSelection();
+    if (Hud)
+        Hud->EndSelection();
 }
 
 void ARTSPlayerController::UpdateDisplayedCommandCard()
 {
-    if (SelectedUnits.Num() > 0 && RTSHUD)
+    if (SelectedUnits.Num() > 0 && Hud)
     {
-        RTSHUD->UpdateCommandCard(CurrentSelectedUnit->CommandCardData);
+        Hud->UpdateCommandCard(CurrentSelectedUnit->CommandCardData);
     }
 }
 
@@ -539,10 +530,9 @@ void ARTSPlayerController::IssueCurrentUnitToBuild(FVector BuildLocation)
 
     ServerRequestUnitCommand(CurrentSelectedUnit, PendingCommand, BuildLocation);
 
-    RTSHUD->ClearBuildingPlacementCursor();
+    Hud->ClearBuildingPlacementCursor();
 
     PendingCommand = nullptr;
-    bIsPlacingBuilding = false;
     CurrentControllerState = EPlayerControllerState::Idle;
 }
 
@@ -556,6 +546,97 @@ void ARTSPlayerController::AllSelectedUnitsIssueCommand(URTSCommandCardData *Cmd
         }
     }
     CurrentControllerState = EPlayerControllerState::Idle;
+}
+
+bool ARTSPlayerController::IsTargetableActor(AActor *Target)
+{
+    if (Target->ActorHasTag("Unit") ||
+        Target->ActorHasTag("Resource") ||
+        Target->ActorHasTag("Building"))
+        return true;
+    return false;
+}
+
+URTSCommandCardData* ARTSPlayerController::GetCommandByType(ECommandType Type, ARTSUnit* Unit)
+{
+    if (!Unit) return nullptr;
+
+    for (URTSCommandCardData* Cmd : Unit->CommandCardData)
+    {
+        if (Cmd && Cmd->CommandType == Type)
+        {
+            return Cmd;
+        }
+    }
+
+    return nullptr;
+}
+
+URTSCommandCardData* ARTSPlayerController::FindCommandByHotkey(FKey Key) const
+{
+    const TArray<URTSCommandCardData*>& SearchArray = 
+        CurrentCommandPage.Num() > 0 ? CurrentCommandPage : CurrentSelectedUnit->CommandCardData;
+
+    if (const auto CmdPtr = Algo::FindByPredicate(SearchArray,
+        [Key](const URTSCommandCardData* Card) { return Card && Card->Hotkey == Key; }))
+    {
+        return *CmdPtr;
+    }
+    return nullptr;
+}
+
+
+void ARTSPlayerController::HandleIdleRClick()
+{
+    FHitResult Hit;
+    if (!GetHitResultUnderCursor(ECC_Visibility, false, Hit))
+        return;
+
+    DrawDebugSphere(GetWorld(), Hit.Location, 50.0f, 12, FColor::Green, false, 0.05f, 0, 2.0f);
+
+    AActor* Target = Hit.GetActor();
+    if (Target && IsTargetableActor(Target))
+    {
+        HandleTargetClick(Target);
+    }
+    else
+    {
+        HandleGroundClick(Hit.Location);
+    }
+}
+
+void ARTSPlayerController::HandleTargetClick(AActor* Target)
+{
+    if (!Target->ActorHasTag("Unit"))
+        return;
+
+    ARTSUnit* HitUnit = Cast<ARTSUnit>(Target);
+    if (!HitUnit || !PS)
+        return;
+
+    if (HitUnit->TeamID != PS->TeamID)
+    {
+        // Attack enemy
+        URTSCommandCardData* AttackCommand = GetCommandByType(ECommandType::Attack, HitUnit);
+        AllSelectedUnitsIssueCommand(AttackCommand, FVector::ZeroVector, HitUnit);
+    }
+    else
+    {
+        // Follow ally
+        URTSCommandCardData* MoveCommand = GetCommandByType(ECommandType::Move, HitUnit);
+        AllSelectedUnitsIssueCommand(MoveCommand, FVector::ZeroVector, HitUnit);
+    }
+}
+
+void ARTSPlayerController::HandleGroundClick(const FVector& Location)
+{
+    // Assume you want to move to this point
+    if (!SelectedUnits.Num())
+        return;
+
+    // Pick Move command from the first unit (or some canonical unit)
+    URTSCommandCardData* MoveCommand = GetCommandByType(ECommandType::Move, SelectedUnits[0]);
+    AllSelectedUnitsIssueCommand(MoveCommand, Location, nullptr);
 }
 
 void ARTSPlayerController::AddUnitToSelection(ARTSUnit *Unit)
@@ -580,48 +661,6 @@ void ARTSPlayerController::ClearSelection()
         }
     }
     SelectedUnits.Empty();
-}
-
-void ARTSPlayerController::ServerIssueCommand_Implementation(const TArray<ARTSUnit *> &Units, ECommandType Command, const FVector &TargetLocation, ARTSUnit *TargetUnit)
-{
-    if (Units.Num() == 0)
-        return;
-
-    // Only compute formation offsets for Move commands
-    TArray<FVector> MoveDestinations;
-    if (Command == ECommandType::Move)
-    {
-        MoveDestinations = ComputeUnitDestinations(TargetLocation, Units.Num(), 100.f); // 100.f spacing
-    }
-
-    for (int32 i = 0; i < Units.Num(); i++)
-    {
-        ARTSUnit *Unit = Units[i];
-        if (!Unit)
-            continue;
-
-        switch (Command)
-        {
-            case ECommandType::Move:
-                if (TargetUnit) // Move command with a unit target
-                {
-                    if (TargetUnit->TeamID != Unit->TeamID)
-                        Unit->StartAttack(TargetUnit); // enemy
-                    else
-                        Unit->Follow(TargetUnit); // ally
-                }
-                else // Move command with a location
-                {
-                    Unit->Move(MoveDestinations[i]);
-                }
-                break;
-
-            case ECommandType::Attack:
-                if (TargetUnit)
-                    Unit->StartAttack(TargetUnit);
-                break;
-        }
-    }
 }
 
 void ARTSPlayerController::ServerRequestUnitCommand_Implementation(ARTSUnit *Unit, URTSCommandCardData *Cmd, FVector Location, AActor *Target)
