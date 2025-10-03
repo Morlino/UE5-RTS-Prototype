@@ -483,9 +483,13 @@ void ARTSPlayerController::UpdateDisplayedCommandCard()
 {
     if (SelectedUnits.Num() > 0 && Hud)
     {
-        Hud->UpdateCommandCard(CurrentSelectedUnit->CommandCardData);
+        if (CurrentSelectedUnit && CurrentSelectedUnit->CommandCardData.Num() > 0)
+        {
+            Hud->UpdateCommandCard(CurrentSelectedUnit->CommandCardData);
+        }
     }
 }
+
 
 AActor *ARTSPlayerController::GetActorUnderCursor()
 {
